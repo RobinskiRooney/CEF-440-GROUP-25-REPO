@@ -48,17 +48,17 @@ class PersonalInfoCard extends StatelessWidget {
           InfoRow(
             icon: Icons.directions_car_outlined,
             label: 'Car model',
-            value: userProfile.carModel,
+            value: userProfile.carModel ?? '',
           ),
           InfoRow(
             icon: Icons.location_on_outlined,
             label: 'Location',
-            value: userProfile.userLocation,
+            value: userProfile.userLocation ?? '',
           ),
           InfoRow(
             icon: Icons.phone_outlined,
             label: 'Mobile contact',
-            value: userProfile.mobileContact,
+            value: userProfile.mobileContact ?? '',
           ),
           InfoRow(
             icon: Icons.logout,

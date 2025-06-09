@@ -1,50 +1,68 @@
+// lib/widgets/how_it_works_card.dart
 import 'package:flutter/material.dart';
+import '../constants/app_colors.dart';
+import '../constants/app_styles.dart';
 
 class HowItWorksCard extends StatelessWidget {
   const HowItWorksCard({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-      padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        color: const Color(0xFF3182CE), // A shade of blue matching the design
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
+    return Card(
+      margin: const EdgeInsets.all(16.0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.info_outline, color: AppColors.primaryColor, size: 24),
+                const SizedBox(width: 10),
+                Text(
+                  'How it Works',
+                  style: AppStyles.headline3.copyWith(color: AppColors.textColor),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildStep(1, 'Tap the record button to capture your engine sound.'),
+            _buildStep(2, 'Ensure a quiet environment for best results.'),
+            _buildStep(3, 'Wait for the AI to analyze the audio.'),
+            _buildStep(4, 'Get instant diagnosis and recommended actions.'),
+          ],
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+    );
+  }
+
+  Widget _buildStep(int stepNumber, String description) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.info_outline,
-            color: Colors.white,
-            size: 40,
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'How It Works',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: AppColors.accentColor,
+              shape: BoxShape.circle,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Start your engine and tap the record button. Our AI will analyze the sound pattern to identify potential issues.',
-            style: TextStyle(
-              color: Colors.blue.shade100,
-              fontSize: 14,
+            alignment: Alignment.center,
+            child: Text(
+              '$stepNumber',
+              style: AppStyles.smallText.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
             ),
-            textAlign: TextAlign.center,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              description,
+              style: AppStyles.bodyText2.copyWith(color: AppColors.secondaryTextColor),
+            ),
           ),
         ],
       ),

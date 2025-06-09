@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
    // You MUST run 'flutterfire configure' and uncomment the line below:
    import 'firebase_options.dart';
 
-   import 'pages/login_page.dart';
+  //  import 'pages/login_page.dart';
    import 'pages/landing_page.dart'; // Your page after successful login
    import 'services/token_manager.dart'; // To check login status on startup
 
@@ -36,6 +36,7 @@ import 'package:flutter/material.dart';
      // Check initial login status and navigate accordingly
      Future<Widget> _getInitialRoute() async {
        final bool loggedIn = await TokenManager.isLoggedIn();
+       print(loggedIn);
        if (loggedIn) {
          return const MainNavigation(); // Navigate to landing page if already logged in
        } else {

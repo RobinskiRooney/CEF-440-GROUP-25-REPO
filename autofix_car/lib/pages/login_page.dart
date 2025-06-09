@@ -31,6 +31,7 @@ class _LoginPageState extends State<LoginPage> {
   // bool _isRegistering = false; // For the register button
   bool _isLoggingIn = false; // For the login button
 
+
   @override
   void dispose() {
     _emailController.dispose();

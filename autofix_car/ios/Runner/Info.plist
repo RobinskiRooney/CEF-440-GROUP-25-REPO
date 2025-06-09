@@ -45,5 +45,14 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	  <!-- Required for microphone access -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>This app needs access to your microphone to record engine sounds for diagnosis.</string>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+    </dict>
 </dict>
 </plist>

@@ -1,7 +1,7 @@
 // lib/screens/profile_page.dart
 import 'package:autofix_car/pages/forgot_password_page.dart';
-import 'package:autofix_car/pages/home_page.dart';
-import 'package:autofix_car/pages/welcome_page.dart';
+// import 'package:autofix_car/pages/home_page.dart';
+// import 'package:autofix_car/pages/welcome_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/user_profile.dart';
@@ -10,6 +10,10 @@ import '../widgets/profile_header.dart';
 import '../constants/app_colors.dart'; // Assuming you have AppColors for consistency
 import '../constants/app_styles.dart'; // Assuming you have AppStyles for consistency
 import 'edit_profile_page.dart'; // Import the new edit page
+import 'login_page.dart';
+// import '../services/auth_service.dart';
+import '../services/token_manager.dart';
+import './admin_add_mechanic_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -18,10 +22,14 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
+     String _authMessage = ''; // Message to display to the user
+     String? _displayEmail; // For displaying logged-in user info (optional)
+     String? _displayUid;   // For displaying logged-in user info (optional)
+
 class _ProfilePageState extends State<ProfilePage> {
   // Example User Profile Data
   UserProfile _userProfile = UserProfile( // Changed to non-final to allow updates
-    userId: 'C1-001',
+    uid: 'C1-001',
     name: 'Boukeng rochinel',
     id: '659658507',
     userLocation: 'Buea, Cameroon',
@@ -31,17 +39,46 @@ class _ProfilePageState extends State<ProfilePage> {
     mobileContact: '659 658 507',
   );
 
-  void _onLogout() {
-    // Implement your logout logic here
-    print('User logged out!');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Logged out successfully!')),
-    );
-        Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const WelcomePage()),
-    );
-  }
+       // Handles the logout process
+     Future<void> _handleLogout() async {
+       await TokenManager.clearTokens(); // Clear tokens from secure storage
+       setState(() {
+         _displayEmail = null;
+         _displayUid = null;
+         _authMessage = 'Logged out successfully.';
+       });
+       ScaffoldMessenger.of(context).showSnackBar(
+         const SnackBar(content: Text('Logged out.')),
+       );
+       // Navigate back to the login page (or root, depending on your app flow)
+       if (mounted) {
+         Navigator.pushReplacement(
+           context,
+           MaterialPageRoute(builder: (context) => const LoginPage()),
+         );
+       }
+     }
+
+     Future<void> _redirectCreateMechanics() async {
+       // Navigate to the Create Mechanic page
+       print('Redirecting to Create Mechanic page...');
+       Navigator.pushReplacement(
+         context,
+         MaterialPageRoute(builder: (context) => const AdminAddMechanicPage()),
+       );
+     }
+
+  // void _handleLogout() {
+  //   // Implement your logout logic here
+  //   print('User logged out!');
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     const SnackBar(content: Text('Logged out successfully!')),
+  //   );
+  //       Navigator.pushReplacement(
+  //     context,
+  //     MaterialPageRoute(builder: (context) => const WelcomePage()),
+  //   );
+  // }
 
   void _onEditProfile() async { // Made async to await result from EditProfilePage
     print('Edit Profile option selected!');
@@ -87,7 +124,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ProfileHeader(userProfile: _userProfile),
             PersonalInfoCard(
               userProfile: _userProfile,
-              onLogout: _onLogout,
+              onLogout: _handleLogout,
             ),
             const SizedBox(height: 20), // Spacing after personal info card
 
@@ -125,6 +162,16 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           trailing: Icon(Icons.arrow_forward_ios, size: 18, color: AppColors.greyTextColor),
                           onTap: _onForgotPassword, // Using the same function for simplicity
+                        ),
+                            Divider(indent: 16, endIndent: 16, height: 1, color: AppColors.lightGrey),
+                        ListTile(
+                          leading: Icon(Icons.lock_reset_outlined, color: AppColors.primaryColor),
+                          title: Text(
+                            'Create Mechanic', // Changed to "Change Password" as it's more common
+                            style: AppStyles.bodyText.copyWith(color: AppColors.textColor),
+                          ),
+                          trailing: Icon(Icons.arrow_forward_ios, size: 18, color: AppColors.greyTextColor),
+                          onTap: _redirectCreateMechanics, // Using the same function for simplicity
                         ),
                       ],
                     ),

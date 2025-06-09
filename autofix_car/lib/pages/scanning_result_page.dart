@@ -1,11 +1,14 @@
+// lib/pages/scanning_result_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // For SystemUiOverlayStyle
 import 'dart:io'; // For File (to display captured image)
-import '../widgets/scan_item_card.dart';
-import '../models/scan_data.dart';
-import '../constants/app_colors.dart';
-import '../constants/app_styles.dart';
-import '../widgets/camera_overlay_scanner.dart';
+import 'package:flutter/foundation.dart'; // For debugPrint
+
+import '../widgets/scan_item_card.dart'; // Import the new ScanItemCard
+import '../models/scan_data.dart'; // Import the new ScanData model
+import '../constants/app_colors.dart'; // Import AppColors
+import '../constants/app_styles.dart'; // Import AppStyles
+import '../widgets/camera_overlay_scanner.dart'; // Import CameraOverlayScanner (the simulated camera page)
 // import '../pages/main_navigation.dart'; // No longer importing directly, assuming BottomNavBar covers it
 
 class ScanningResultPage extends StatelessWidget {
@@ -17,31 +20,40 @@ class ScanningResultPage extends StatelessWidget {
   });
 
   // Mock data for previous scans
+  // In a real app, this would be fetched from your backend
   final List<ScanData> previousScans = const [
     ScanData(
-      imagePath: 'https://placehold.co/60x60/F0F0F0/000000?text=IMG', // Placeholder image
+      imagePath: 'https://placehold.co/60x60/F0F0F0/000000?text=IMG1', // Placeholder image
       title: 'Power steering problem',
-      description: 'imminent problems with the power steering system.',
+      description: 'Potential issues with the power steering system detected. Check fluid level and pump.',
+      status: 'Faults Detected',
+      scanDateTime: null, // Will use current date if null
     ),
     ScanData(
-      imagePath: 'https://placehold.co/60x60/F0F0F0/000000?text=IMG',
-      title: 'Power steering problem',
-      description: 'imminent problems with the power steering system.',
+      imagePath: 'https://placehold.co/60x60/F0F0F0/000000?text=IMG2',
+      title: 'Tire Pressure Warning',
+      description: 'One or more tires are underinflated. Check tire pressure and inflate to recommended PSI.',
+      status: 'Needs Attention',
+      scanDateTime: null,
     ),
     ScanData(
-      imagePath: 'https://placehold.co/60x60/F0F0F0/000000?text=IMG',
-      title: 'Power steering problem',
-      description: 'imminent problems with the power steering system.',
+      imagePath: 'https://placehold.co/60x60/F0F0F0/000000?text=IMG3',
+      title: 'Engine Oil Low',
+      description: 'Engine oil level is low. Top up engine oil immediately to prevent damage.',
+      status: 'Faults Detected',
+      scanDateTime: null,
     ),
     ScanData(
-      imagePath: 'https://placehold.co/60x60/F0F0F0/000000?text=IMG',
-      title: 'Power steering problem',
-      description: 'imminent problems with the power steering system.',
+      imagePath: 'https://placehold.co/60x60/F0F0F0/000000?text=IMG4',
+      title: 'No Issues Detected',
+      description: 'No significant faults or warnings found during the scan.',
+      status: 'No Faults',
+      scanDateTime: null,
     ),
   ];
 
   // AppBar builder method
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0.5,
@@ -50,17 +62,15 @@ class ScanningResultPage extends StatelessWidget {
         icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
         onPressed: () {
           // You might navigate back to the camera or a different main tab
-          print('Back button pressed on Scanning Result Page');
-          // Example: Navigator.pop(context); if there's a previous route to pop to
-          // If this is the main entry after camera, consider pushing to a main dashboard
+          debugPrint('Back button pressed on Scanning Result Page');
+          Navigator.pop(context); // Pops to previous page, usually CameraOverlayScanner
         },
       ),
-      title: const Text(
-        'Scanning Result', // Changed title to 'Scanning Result'
-        style: TextStyle(
-          color: Colors.black87,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
+      title: Text(
+        'Scanning Result',
+        style: AppStyles.bodyText1.copyWith(
+          color: AppColors.textColor, // Using AppColors.textColor
+          fontWeight: FontWeight.w600, // Adjusted weight
         ),
       ),
       centerTitle: true,
@@ -68,7 +78,9 @@ class ScanningResultPage extends StatelessWidget {
         IconButton(
           icon: const Icon(Icons.notifications_outlined, color: Colors.black),
           onPressed: () {
-            // Handle notification button press
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Notifications (Not Implemented)')),
+            );
           },
         ),
       ],
@@ -78,7 +90,7 @@ class ScanningResultPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(), // Added the custom AppBar
+      appBar: _buildAppBar(context), // Pass context to AppBar builder
       body: SafeArea(
         child: Column(
           children: [
@@ -86,7 +98,7 @@ class ScanningResultPage extends StatelessWidget {
             Expanded(
               flex: 2, // Takes more space
               child: Container(
-                color: AppColors.lightGrey, // Default placeholder color
+                color: AppColors.inputFillColor, // Using a consistent color from AppColors
                 alignment: Alignment.center,
                 child: capturedImagePath != null && File(capturedImagePath!).existsSync()
                     ? Image.file(
@@ -95,17 +107,18 @@ class ScanningResultPage extends StatelessWidget {
                         width: double.infinity,
                         height: double.infinity,
                         errorBuilder: (context, error, stackTrace) {
+                          debugPrint('Error loading captured image: $error'); // Use debugPrint
                           return Center(
                             child: Text(
                               'Could not load image.',
-                              style: AppStyles.bodyText.copyWith(color: AppColors.textColor),
+                              style: AppStyles.bodyText1.copyWith(color: AppColors.secondaryTextColor), // Consistent style
                             ),
                           );
                         },
                       )
                     : Text(
                         'Video/Image Area',
-                        style: AppStyles.bodyText.copyWith(color: AppColors.textColor),
+                        style: AppStyles.bodyText1.copyWith(color: AppColors.secondaryTextColor), // Consistent style
                       ),
               ),
             ),
@@ -114,7 +127,10 @@ class ScanningResultPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
               child: ElevatedButton(
                 onPressed: () {
-                  // Handle consult mechanic
+                  // TODO: Handle consult mechanic (e.g., navigate to MechanicsPage)
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Consult Mechanic (Not Implemented)')),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryColor,
@@ -124,7 +140,7 @@ class ScanningResultPage extends StatelessWidget {
                   ),
                   elevation: 5,
                 ),
-                child: Text(
+                child: const Text(
                   'Consult a mechanic',
                   style: AppStyles.buttonText,
                 ),
@@ -138,16 +154,19 @@ class ScanningResultPage extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        // Handle scan again - maybe navigate back to camera
+                        // Handle scan again - navigate back to camera overlay scanner
                         Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
                                 builder: (context) => const CameraOverlayScanner()));
                       },
-                      icon: const Icon(Icons.refresh, color: AppColors.textColor),
-                      label: Text('Scan Again', style: AppStyles.buttonText.copyWith(color: AppColors.textColor)),
+                      icon: const Icon(Icons.refresh, color: AppColors.textColor), // Icon color
+                      label: Text(
+                        'Scan Again',
+                        style: AppStyles.buttonText.copyWith(color: AppColors.textColor), // Text color
+                      ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.greyButtonColor,
+                        backgroundColor: AppColors.borderColor, // Using borderColor as a grey button
                         minimumSize: const Size.fromHeight(50),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -160,12 +179,18 @@ class ScanningResultPage extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        // Handle download
+                        // TODO: Handle download functionality
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Download Report (Not Implemented)')),
+                        );
                       },
                       icon: const Icon(Icons.download, color: Colors.white),
-                      label: Text('Download', style: AppStyles.buttonText),
+                      label: const Text(
+                        'Download',
+                        style: AppStyles.buttonText,
+                      ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.secondaryColor,
+                        backgroundColor: AppColors.accentColor, // Using accentColor as a distinct secondary button
                         minimumSize: const Size.fromHeight(50),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -207,8 +232,6 @@ class ScanningResultPage extends StatelessWidget {
           ],
         ),
       ),
-
     );
   }
 }
-

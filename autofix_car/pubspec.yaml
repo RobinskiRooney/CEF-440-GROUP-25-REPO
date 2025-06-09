@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.1.1
+  sdk: ^3.8.1
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -32,11 +32,11 @@ dependencies:
     sdk: flutter
   google_fonts: ^6.2.1 # Or your current version
   camera: ^0.10.5+9 # Use the latest stable version, check pub.dev
-  path_provider: ^2.1.3 # Use the latest stable version, check pub.dev
+  path_provider: ^2.1.5
+  permission_handler: ^12.0.0+1
   cupertino_icons: ^1.0.8
-  record: ^5.0.0 # Replace with the latest version from pub.dev
+  # record: ^5.0.0 # Replace with the latest version from pub.dev
   # path_provider: ^2.1.3 # Already specified above
-  permission_handler: ^11.3.0 # Replace with the latest version from pub.dev
   url_launcher: ^6.3.0 # Use the latest stable version
   image_picker: ^1.1.2
   just_audio: ^0.9.36 # Replace with the latest version from pub.dev
@@ -45,6 +45,9 @@ dependencies:
   http: ^1.4.0  
   flutter_dotenv: 5.2.1 
   flutter_secure_storage: ^ 9.2.4 # e.g., ^9.0.0 - For secure token storage
+  font_awesome_flutter: ^10.8.0
+  record: ^6.0.0
+  audioplayers: ^6.4.0
 
 
 dev_dependencies:

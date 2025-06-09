@@ -1,18 +1,25 @@
-// lib/models/map_location.dart
-import 'package:flutter/material.dart'; // Ensure Offset is recognized
+import 'package:flutter/material.dart';
 
-enum LocationType { academy, hotel, stadium, university, mechanicShop }
+// Enum for different types of locations on the map
+enum LocationType {
+  academy,
+  hotel,
+  stadium,
+  university,
+  other, // Generic type for any other locations
+}
 
+// Model for a specific location on the map
 class MapLocation {
   final String name;
   final LocationType type;
-  final Offset position;
-  final String? phoneNumber; // <-- ADD THIS LINE (optional as not all locations might have a direct contact)
+  final Offset position; // Used for static map representation (if not Google Maps LatLng)
+  final String? phoneNumber; // Optional phone number for the location
 
-  MapLocation({
+  const MapLocation({
     required this.name,
     required this.type,
     required this.position,
-    this.phoneNumber, // <-- ADD THIS LINE to constructor
+    this.phoneNumber,
   });
 }

@@ -62,3 +62,7 @@ macos/.symlinks/
 # Other generated files
 *.iml
 .DS_Store
+
+firebase.json
+lib/firebase_options.dart
+android/

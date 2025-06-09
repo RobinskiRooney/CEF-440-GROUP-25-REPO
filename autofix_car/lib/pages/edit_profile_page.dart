@@ -4,10 +4,11 @@ import 'dart:io'; // For File
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart'; // Import ImagePicker
+import 'package:flutter/foundation.dart'; // For debugPrint
 
-import '../models/user_profile.dart';
-import '../constants/app_colors.dart';
-import '../constants/app_styles.dart';
+import '../models/user_profile.dart'; // Import the UserProfile model
+import '../constants/app_colors.dart'; // Ensure correct import path for AppColors
+import '../constants/app_styles.dart'; // Ensure correct import path for AppStyles
 
 
 class EditProfilePage extends StatefulWidget {
@@ -67,7 +68,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         });
       }
     } catch (e) {
-      print('Failed to pick image: $e');
+      debugPrint('Failed to pick image: $e'); // Use debugPrint for logging
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to pick image: $e')),
       );
@@ -113,13 +114,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
     // If you need persistence, you must integrate cloud storage (e.g., Firebase Storage).
 
     final updatedUserProfile = UserProfile(
-      userId: widget.userProfile.userId, // userId must be passed
+      uid: widget.userProfile.uid, // uid must be passed
       name: _nameController.text,
       id: _idController.text,
       userLocation: _locationController.text,
       // For now, imageUrl remains the original. If you want to pass the local path,
       // UserProfile would need to support a local file path field.
-      imageUrl: widget.userProfile.imageUrl,
+      imageUrl: widget.userProfile.imageUrl, // Or use _pickedImageFile.path if you want to store local path temporarily
       email: _emailController.text,
       carModel: _carModelController.text,
       mobileContact: _mobileContactController.text,
@@ -136,6 +137,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Determine the image provider based on the available image source
+    ImageProvider<Object>? backgroundImageProvider;
+    if (_pickedImageFile != null) {
+      backgroundImageProvider = FileImage(_pickedImageFile!);
+    } else if (widget.userProfile.imageUrl != null && widget.userProfile.imageUrl!.isNotEmpty) {
+      backgroundImageProvider = NetworkImage(widget.userProfile.imageUrl!);
+    }
+
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       appBar: _buildAppBar(),
@@ -150,19 +159,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 children: [
                   CircleAvatar(
                     radius: 60,
-                    backgroundColor: AppColors.lightGrey,
-                    // Display the picked image file if available, otherwise the network image
-                    backgroundImage: _pickedImageFile != null
-                        ? FileImage(_pickedImageFile!) as ImageProvider<Object>? // Use FileImage for local file
-                        : (widget.userProfile.imageUrl.isNotEmpty
-                            ? NetworkImage(widget.userProfile.imageUrl) // Use NetworkImage for URL
-                            : null),
+                    backgroundColor: AppColors.borderColor, // Changed to borderColor for consistency
+                    backgroundImage: backgroundImageProvider, // Use the determined image provider
                     onBackgroundImageError: (exception, stackTrace) {
-                      print('Error loading image: $exception');
+                      debugPrint('Error loading image: $exception'); // Use debugPrint
                     },
                     // Show default icon if no image picked and no network image
-                    child: _pickedImageFile == null && widget.userProfile.imageUrl.isEmpty
-                        ? Icon(Icons.person, size: 60, color: AppColors.greyTextColor)
+                    child: backgroundImageProvider == null
+                        ? Icon(Icons.person, size: 60, color: AppColors.secondaryTextColor) // Used secondaryTextColor
                         : null,
                   ),
                   Positioned(
@@ -242,9 +246,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   ),
                   minimumSize: const Size(double.infinity, 50), // Make button full width
                 ),
-                child: Text(
+                child: const Text(
                   'Save Changes',
-                  style: AppStyles.buttonText,
+                  style: AppStyles.buttonText, // Already correctly using AppStyles.buttonText
                 ),
               ),
             ),
@@ -267,12 +271,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
       controller: controller,
       keyboardType: keyboardType,
       readOnly: readOnly,
-      style: AppStyles.bodyText.copyWith(color: AppColors.textColor),
+      // Corrected: Use bodyText1 as bodyText is not defined in AppStyles
+      style: AppStyles.bodyText1.copyWith(color: AppColors.textColor),
       decoration: InputDecoration(
         labelText: labelText,
         hintText: hintText,
-        labelStyle: AppStyles.bodyText.copyWith(color: AppColors.greyTextColor),
-        hintStyle: AppStyles.bodyText.copyWith(color: AppColors.greyTextColor.withOpacity(0.7)),
+        // Corrected: Use secondaryTextColor instead of greyTextColor
+        labelStyle: AppStyles.bodyText1.copyWith(color: AppColors.secondaryTextColor),
+        hintStyle: AppStyles.bodyText1.copyWith(color: AppColors.secondaryTextColor.withOpacity(0.7)),
         prefixIcon: Icon(icon, color: AppColors.primaryColor),
         filled: true,
         fillColor: Colors.white,
@@ -282,7 +288,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.lightGrey, width: 1.0),
+          // Corrected: Use borderColor instead of lightGrey
+          borderSide: BorderSide(color: AppColors.borderColor, width: 1.0),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -306,7 +313,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       ),
       title: Text(
         'Edit Profile',
-        style: AppStyles.headline4.copyWith(color: AppColors.textColor),
+        // Corrected: Use headline3 as headline4 is not defined in AppStyles
+        style: AppStyles.headline3.copyWith(color: AppColors.textColor),
       ),
       centerTitle: true,
       actions: [

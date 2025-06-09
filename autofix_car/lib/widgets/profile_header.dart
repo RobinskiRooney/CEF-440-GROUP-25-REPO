@@ -15,7 +15,7 @@ class ProfileHeader extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 40,
-            backgroundImage: NetworkImage(userProfile.imageUrl),
+            backgroundImage: NetworkImage(userProfile.imageUrl ?? ''),
             backgroundColor: Colors.blue.shade100,
             onBackgroundImageError: (exception, stackTrace) {
               // Fallback to a placeholder icon or color if image fails to load
@@ -28,7 +28,7 @@ class ProfileHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  userProfile.name,
+                  userProfile.name ?? '',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -37,14 +37,14 @@ class ProfileHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  userProfile.id,
+                  userProfile.uid,
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade700,
                   ),
                 ),
                 Text(
-                  userProfile.userLocation,
+                  userProfile.userLocation ?? '',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade700,
@@ -53,35 +53,35 @@ class ProfileHeader extends StatelessWidget {
               ],
             ),
           ),
-          Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade600,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.message_outlined,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade600,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.phone,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-            ],
-          ),
+          // Column(
+          //   children: [
+          //     Container(
+          //       padding: const EdgeInsets.all(10),
+          //       decoration: BoxDecoration(
+          //         color: Colors.blue.shade600,
+          //         shape: BoxShape.circle,
+          //       ),
+          //       child: const Icon(
+          //         Icons.message_outlined,
+          //         color: Colors.white,
+          //         size: 20,
+          //       ),
+          //     ),
+          //     const SizedBox(height: 8),
+          //     Container(
+          //       padding: const EdgeInsets.all(10),
+          //       decoration: BoxDecoration(
+          //         color: Colors.blue.shade600,
+          //         shape: BoxShape.circle,
+          //       ),
+          //       child: const Icon(
+          //         Icons.phone,
+          //         color: Colors.white,
+          //         size: 20,
+          //       ),
+          //     ),
+          //   ],
+          // ),
         ],
       ),
     );

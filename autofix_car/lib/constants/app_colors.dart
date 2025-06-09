@@ -17,6 +17,19 @@ class AppColors {
   static const Color lightGrey = Color(0xFFEEEEEE); // Very light grey for backgrounds/borders
   static const Color errorColor = Color(0xFFD32F2F); // Red for errors
   static const Color successColor = Color(0xFF388E3C); // Green for su
+  //   static const Color primaryColor = Color(0xFF3182CE); // Dark Blue
+  static const Color primaryDark = Color(0xFF1E3A5F); // Even darker blue for header backgrounds
+  // static const Color accentColor = Color(0xFFF6AD55); // Orange/Yellow accent
+  // static const Color successColor = Color(0xFF48BB78); // Green for success/positive
+  // static const Color errorColor = Color(0xFFE53E3E);   // Red for errors
+  static const Color warningColor = Color(0xFFF6AD55); // Orange for warnings
+
+  // static const Color textColor = Color(0xFF2D3748);    // Dark grey for main text
+  static const Color secondaryTextColor = Color(0xFF718096); // Lighter grey for secondary text
+  static const Color borderColor = Color(0xFFE2E8F0);  // Light grey for borders
+  static const Color inputFillColor = Color(0xFFF7FAFC); // Very light grey for input fields
+  // static const Color backgroundColor = Color(0xFFF8F8F8); // Light background for general use
+
 
   // Specific colors for the dashboard page
   static const Color lightBlueGradientStart = Color(0xFF81D4FA); // Lighter blue for header gradient

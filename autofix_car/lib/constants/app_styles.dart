@@ -50,6 +50,62 @@ class AppStyles {
     fontWeight: FontWeight.normal,
     color: AppColors.textColor,
   );
+  
+  //  static const TextStyle bodyText2 = TextStyle( // Added for smaller descriptive text
+  //   fontSize: 14,
+  //   fontWeight: FontWeight.normal,
+  //   color: AppColors.textColor,
+  // );
+
+    // Body Text
+  static const TextStyle bodyText1 = TextStyle(
+    fontSize: 16,
+    color: AppColors.textColor,
+  );
+
+  static const TextStyle bodyText2 = TextStyle(
+    fontSize: 14,
+    color: AppColors.secondaryTextColor,
+  );
+
+  // // Button Text
+  // static const TextStyle buttonText = TextStyle(
+  //   fontSize: 16,
+  //   fontWeight: FontWeight.w600,
+  //   color: Colors.white, // Default for ElevatedButton
+  // );
+
+  // Input Field Styles
+  static const TextStyle labelText = TextStyle(
+    fontSize: 14,
+    color: AppColors.secondaryTextColor,
+  );
+
+  static const TextStyle hintText = TextStyle(
+    fontSize: 14,
+    color: AppColors.secondaryTextColor,
+  );
+
+  // // Small Text / Captions
+  // static const TextStyle smallText = TextStyle(
+  //   fontSize: 12,
+  //   color: AppColors.secondaryTextColor,
+  // );
+
+  // Error Text
+  static const TextStyle errorText = TextStyle(
+    fontSize: 14,
+    color: AppColors.errorColor,
+    fontWeight: FontWeight.bold,
+  );
+
+  // Success Text
+  static const TextStyle successText = TextStyle(
+    fontSize: 14,
+    color: AppColors.successColor,
+    fontWeight: FontWeight.bold,
+  );
+  
 
   // static const TextStyle headline4 = TextStyle(fontSize: 20, fontWeight: FontWeight.bold);
   // static const TextStyle bodyText = TextStyle(fontSize: 14);

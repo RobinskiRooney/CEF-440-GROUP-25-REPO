@@ -1,119 +1,108 @@
-// lib/screens/mechanics_page.dart
+// lib/pages/mechanics_page.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart'; // Import url_launcher
+import 'package:flutter/services.dart'; // For SystemUiOverlayStyle
+import 'package:flutter/foundation.dart'; // For debugPrint
+import 'package:url_launcher/url_launcher.dart'; // For making calls/opening websites
 
-import '../models/mechanic.dart';
-import '../models/map_location.dart';
-import '../widgets/map_section.dart';
-import '../widgets/mechanic_card.dart';
-import '../constants/app_colors.dart';
-import '../constants/app_styles.dart';
+import '../models/mechanic.dart'; // Import the Mechanic model
+import '../services/mechanic_service.dart'; // Import the MechanicService
+import '../constants/app_colors.dart'; // General app colors
+import '../constants/app_styles.dart'; // General app text styles
+import '../widgets/mechanic_card.dart'; // Import MechanicCard widget
+
 
 class MechanicsPage extends StatefulWidget {
   const MechanicsPage({super.key});
 
   @override
-  _MechanicsPageState createState() => _MechanicsPageState();
+  State<MechanicsPage> createState() => _MechanicsPageState();
 }
 
 class _MechanicsPageState extends State<MechanicsPage> {
   final TextEditingController _searchController = TextEditingController();
 
+  List<Mechanic> _mechanics = []; // Original list of all fetched mechanics
+  List<Mechanic> _filteredMechanics = []; // List to hold mechanics after applying filters
+  bool _isLoading = true; // State for loading data
+  String _errorMessage = ''; // State for displaying error messages
+
   // List of Cameroon regions
   final List<String> _cameroonRegions = [
-    'Adamawa',
-    'Centre',
-    'East',
-    'Far North',
-    'Littoral',
-    'North',
-    'Northwest',
-    'South',
-    'Southwest',
-    'West',
+    'All Regions', // Added an option to view all regions
+    'Adamawa', 'Centre', 'East', 'Far North', 'Littoral',
+    'North', 'North-West', 'South', 'South-West', 'West'
   ];
 
-  // Currently selected region, initialized to 'Southwest' as Buea is in Southwest
+  // Currently selected region, initialized to 'South-West'
   String? _selectedRegion;
 
   @override
   void initState() {
     super.initState();
-    _selectedRegion = _cameroonRegions[8]; // Initialize with 'Southwest'
+    _selectedRegion = _cameroonRegions[0]; // Initialize with 'South-West'
+    _loadMechanics(); // Load mechanics when the page initializes
   }
 
-  // UPDATED: Added placeholder phone numbers for locations where applicable
-  final List<MapLocation> _mapLocations = [
-    MapLocation(
-      name: "BUEA FILM ACADEMY",
-      type: LocationType.academy,
-      position: const Offset(280, 115),
-      phoneNumber: "+237677123456", // Example number
-    ),
-    MapLocation(
-      name: "Pinorich Villa",
-      type: LocationType.hotel,
-      position: const Offset(330, 168),
-      phoneNumber: "+237699765432", // Example number
-    ),
-    MapLocation(
-      name: "Longho Lodge Bonduma - Buea",
-      type: LocationType.hotel,
-      position: const Offset(210, 268),
-      phoneNumber: "+237677234567", // Example number
-    ),
-    MapLocation(
-      name: "Buea Town Stadium",
-      type: LocationType.stadium,
-      position: const Offset(80, 235),
-      // No phone number for a stadium usually
-    ),
-    MapLocation(
-      name: "Central Administration University of Buea",
-      type: LocationType.university,
-      position: const Offset(200, 340),
-      phoneNumber: "+237243123456", // Example number
-    ),
-  ];
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
-  // UPDATED: Added placeholder phone numbers for mechanics
-  final List<Mechanic> _mechanics = [
-    Mechanic(
-      name: "Nash Car Fix",
-      address: "B 1234 EA",
-      location: "Buea, Cameroon",
-      imageUrl: "https://via.placeholder.com/50x50/4CAF50/FFFFFF?text=NC",
-      rating: 4.8,
-      isVerified: true,
-      phoneNumber: "+237678112233", // Example Nash Car Fix
-    ),
-    Mechanic(
-      name: "Auto Repair Hub",
-      address: "Molyko, Great Soppo",
-      location: "Buea, Cameroon",
-      imageUrl: "https://via.placeholder.com/50x50/2196F3/FFFFFF?text=AH",
-      rating: 4.5,
-      isVerified: false,
-      phoneNumber: "+237659658507", // Example Auto Repair Hub
-    ),
-    Mechanic(
-      name: "Speedy Motors",
-      address: "Check Point, Bomaka",
-      location: "Buea, Cameroon",
-      imageUrl: "assets/images/profile_pic.png",
-      rating: 4.9,
-      isVerified: true,
-      phoneNumber: "+237677998877", // Example Speedy Motors
-    ),
-  ];
+  // --- Data Loading Functions ---
 
-  // --- NEW: Utility functions for launching calls and WhatsApp ---
+  Future<void> _loadMechanics() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = ''; // Clear previous error messages
+    });
+    try {
+      _mechanics = await MechanicService.getAllMechanics();
+      _applyFilters(); // Apply filters immediately after loading to populate _filteredMechanics
+    } catch (e) {
+      debugPrint('Error loading mechanics: $e');
+      setState(() {
+        _errorMessage = 'Failed to load mechanics: ${e.toString()}';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false; // Always set loading to false in finally block
+      });
+    }
+  }
+
+  // --- Search and Filter Logic ---
+  void _applyFilters() {
+    final String query = _searchController.text.toLowerCase();
+    final String? region = _selectedRegion;
+
+    setState(() {
+      _filteredMechanics = _mechanics.where((mechanic) {
+        final bool matchesSearch = mechanic.name.toLowerCase().contains(query) ||
+                                  mechanic.address.toLowerCase().contains(query) ||
+                                  mechanic.specialties.any((s) => s.toLowerCase().contains(query));
+
+        // Note: Your Mechanic model does not have a 'location' field,
+        // but often the 'address' field contains location info.
+        // If you want to filter by region, your Mechanic model needs a 'region' field
+        // or a way to derive it from the 'address' or coordinates.
+        // For now, I'm adding a placeholder for region filtering.
+        final bool matchesRegion = region == null || region == 'All Regions' ||
+                                   (mechanic.address.toLowerCase().contains(region.toLowerCase()));
+                                   // This is a naive check; a real app might use geocoding or a dedicated 'region' field
+
+        return matchesSearch && matchesRegion;
+      }).toList();
+    });
+  }
+
+  // --- Utility functions for launching external apps ---
 
   Future<void> _makePhoneCall(String phoneNumber) async {
+    final cleanedPhoneNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
     final Uri launchUri = Uri(
       scheme: 'tel',
-      path: phoneNumber,
+      path: cleanedPhoneNumber,
     );
     if (await canLaunchUrl(launchUri)) {
       await launchUrl(launchUri);
@@ -125,9 +114,8 @@ class _MechanicsPageState extends State<MechanicsPage> {
   }
 
   Future<void> _launchWhatsApp(String phoneNumber, String message) async {
-    // For WhatsApp, using wa.me is generally more reliable cross-platform
-    // phoneNumber should be in international format without '+' or '00' (e.g., 237677123456)
-    final String url = 'https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}';
+    final cleanedPhoneNumber = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
+    final String url = 'https://wa.me/$cleanedPhoneNumber?text=${Uri.encodeComponent(message)}';
     final Uri launchUri = Uri.parse(url);
 
     if (await canLaunchUrl(launchUri)) {
@@ -139,24 +127,149 @@ class _MechanicsPageState extends State<MechanicsPage> {
     }
   }
 
-  // --- END NEW UTILITY FUNCTIONS ---
+  Future<void> _openWebsite(String? websiteUrl) async {
+    if (websiteUrl == null || websiteUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No website available for this mechanic.')),
+      );
+      return;
+    }
+    final Uri launchUri = Uri.parse(websiteUrl);
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not launch $websiteUrl')),
+      );
+    }
+  }
+
+  // --- UI Building Methods ---
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       appBar: _buildAppBar(context),
-      body: Column(
-        children: [
-          MapSection(
-            mapLocations: _mapLocations,
-            onLocationTap: _showLocationDetails,
-          ),
-          _buildSearchSection(),
-          Expanded(child: _buildMechanicsList()),
-          _buildPersonalInfo(),
-        ],
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primaryColor))
+          : _errorMessage.isNotEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(_errorMessage, style: AppStyles.errorText, textAlign: TextAlign.center),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadMechanics,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : Column(
+                  children: [
+                    // Search and Filter Section
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      child: Column(
+                        children: [
+                          TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: 'Search for a mechanic (name, address, specialty)',
+                              hintStyle: AppStyles.bodyText2,
+                              prefixIcon: const Icon(Icons.search, color: AppColors.secondaryTextColor),
+                              suffixIcon: const Icon(Icons.mic, color: AppColors.secondaryTextColor),
+                              filled: true,
+                              fillColor: AppColors.inputFillColor,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            ),
+                            onChanged: (query) {
+                              _applyFilters(); // Apply filters on search query change
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String>(
+                            value: _selectedRegion,
+                            hint: const Text('Filter by Region'),
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              prefixIcon: const Icon(Icons.location_on),
+                              filled: true,
+                              fillColor: AppColors.inputFillColor,
+                            ),
+                            items: _cameroonRegions.map((String region) {
+                              return DropdownMenuItem<String>(
+                                value: region,
+                                child: Text(region),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                _selectedRegion = newValue;
+                                _applyFilters(); // Apply filters on region change
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Mechanic Information List Header
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Nearby Mechanics (${_filteredMechanics.length})', // Show count
+                          style: AppStyles.headline3,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Mechanics List
+                    Expanded(
+                      child: _filteredMechanics.isEmpty
+                          ? Center(
+                              child: Text(
+                                _mechanics.isEmpty
+                                    ? 'No mechanics available.'
+                                    : 'No mechanics found matching your criteria.',
+                                style: AppStyles.bodyText2,
+                                textAlign: TextAlign.center,
+                              ),
+                            )
+                          : RefreshIndicator( // Added RefreshIndicator
+                              onRefresh: _loadMechanics,
+                              color: AppColors.primaryColor,
+                              child: ListView.builder(
+                                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                itemCount: _filteredMechanics.length,
+                                itemBuilder: (context, index) {
+                                  final mechanic = _filteredMechanics[index];
+                                  return MechanicCard(
+                                    mechanic: mechanic,
+                                    onMessage: (mech) => _launchWhatsApp(mech.phone, 'Hello ${mech.name}, I need assistance with my car from the AutoFix app.'),
+                                    onCall: (mech) => _makePhoneCall(mech.phone),
+                                    onShare: (mech) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Share details for ${mech.name} (not implemented)')),
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
     );
   }
 
@@ -173,153 +286,23 @@ class _MechanicsPageState extends State<MechanicsPage> {
       ),
       title: Text(
         'Mechanics',
-        style: AppStyles.headline4.copyWith(color: Colors.white),
+        style: AppStyles.headline3.copyWith(color: Colors.white),
       ),
       centerTitle: true,
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_outlined, color: Colors.white),
           onPressed: () {
-            // Handle notification button press
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Notifications (Not Implemented)')),
+            );
           },
         ),
       ],
     );
   }
 
-  Widget _buildSearchSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: TextField(
-        controller: _searchController,
-        decoration: InputDecoration(
-          hintText: 'Search for a mechanic',
-          hintStyle: AppStyles.bodyText.copyWith(color: AppColors.greyTextColor),
-          prefixIcon: Icon(
-            Icons.search,
-            color: AppColors.greyTextColor,
-          ),
-          suffixIcon: Icon(
-            Icons.mic,
-            color: AppColors.greyTextColor,
-          ),
-          filled: true,
-          fillColor: AppColors.lightGrey,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-        ),
-        onChanged: (query) {
-          // Implement search logic here
-        },
-      ),
-    );
-  }
-
-  Widget _buildMechanicsList() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'Mechanic Information',
-            style: AppStyles.headline4.copyWith(color: AppColors.textColor),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _mechanics.length,
-            itemBuilder: (context, index) {
-              final mechanic = _mechanics[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: MechanicCard(
-                  mechanic: mechanic,
-                  onMessage: (mechanic) {
-                    // Call WhatsApp function
-                    _launchWhatsApp(mechanic.phoneNumber.replaceAll('+', ''), 'Hello ${mechanic.name}, I need assistance with my car from the AutoFix app.'); // Remove '+' for wa.me
-                  },
-                  onCall: (mechanic) {
-                    // Call phone call function
-                    _makePhoneCall(mechanic.phoneNumber);
-                  },
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPersonalInfo() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.lightGrey,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.accentColor,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.location_on,
-              color: Colors.white,
-              size: 16,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Location',
-                style: AppStyles.smallText.copyWith(color: AppColors.greyTextColor),
-              ),
-              DropdownButton<String>(
-                value: _selectedRegion,
-                icon: const Icon(Icons.arrow_drop_down, color: AppColors.textColor),
-                iconSize: 24,
-                elevation: 16,
-                style: AppStyles.bodyText.copyWith(color: AppColors.textColor, fontWeight: FontWeight.w500),
-                underline: Container(
-                  height: 0,
-                ),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedRegion = newValue;
-                    print('Selected region: $_selectedRegion');
-                  });
-                },
-                items: _cameroonRegions.map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showLocationDetails(MapLocation location) {
+  void _showMechanicDetailsModal(Mechanic mechanic) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -332,92 +315,96 @@ class _MechanicsPageState extends State<MechanicsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              location.name,
-              style: AppStyles.headline4.copyWith(color: AppColors.textColor),
+              mechanic.name,
+              style: AppStyles.headline3.copyWith(color: AppColors.textColor),
             ),
             const SizedBox(height: 8),
             Text(
-              'Type: ${location.type.toString().split('.').last}',
-              style: AppStyles.smallText.copyWith(color: AppColors.greyTextColor),
+              mechanic.address,
+              style: AppStyles.bodyText2,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 4),
             Row(
               children: [
+                Icon(Icons.star, color: Colors.amber, size: 18),
+                Text('${mechanic.rating.toStringAsFixed(1)}', style: AppStyles.bodyText2),
+                const SizedBox(width: 8),
+                Icon(
+                  mechanic.verificationStatus == 'Verified' ? Icons.verified : Icons.error_outline,
+                  color: mechanic.verificationStatus == 'Verified' ? AppColors.successColor : AppColors.warningColor,
+                  size: 18,
+                ),
+                Text(mechanic.verificationStatus, style: AppStyles.bodyText2),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (mechanic.email != null && mechanic.email!.isNotEmpty)
+              _buildDetailRow(Icons.email, 'Email', mechanic.email!),
+            if (mechanic.phone.isNotEmpty)
+              _buildDetailRow(Icons.phone, 'Phone', mechanic.phone),
+            if (mechanic.website != null && mechanic.website!.isNotEmpty)
+              _buildDetailRow(Icons.public, 'Website', mechanic.website!),
+            if (mechanic.specialties.isNotEmpty)
+              _buildDetailRow(Icons.build, 'Specialties', mechanic.specialties.join(', ')),
+
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
                 Expanded(
-                  child: ElevatedButton(
+                  child: ElevatedButton.icon(
                     onPressed: () {
-                      // Simulate getting directions
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Getting directions to ${location.name}')),
-                      );
-                      Navigator.pop(context);
+                      _makePhoneCall(mechanic.phone);
+                      Navigator.pop(context); // Close modal after action
                     },
+                    icon: const Icon(Icons.phone),
+                    label: const Text('Call'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      'Get Directions',
-                      style: AppStyles.buttonText,
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: location.phoneNumber != null
-                        ? () {
-                            _makePhoneCall(location.phoneNumber!);
-                            Navigator.pop(context);
-                          }
-                        : null, // Disable if no phone number
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.primaryColor, width: 2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      'Call',
-                      style: AppStyles.buttonText.copyWith(color: AppColors.primaryColor),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: location.phoneNumber != null
-                        ? () {
-                            // Using location.name as part of the message for context
-                            _launchWhatsApp(location.phoneNumber!.replaceAll('+', ''), 'Hello ${location.name}, I need assistance from the AutoFix app.');
-                            Navigator.pop(context);
-                          }
-                        : null, // Disable if no phone number
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.primaryColor, width: 2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      'Message',
-                      style: AppStyles.buttonText.copyWith(color: AppColors.primaryColor),
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      _launchWhatsApp(mechanic.phone, 'Hello ${mechanic.name}, I need assistance from the AutoFix app.');
+                      Navigator.pop(context); // Close modal after action
+                    },
+                    icon: Icon(Icons.chat), // Use a chat icon as a placeholder for WhatsApp
+                    label: const Text('WhatsApp'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.successColor,
                     ),
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+            // Removed "View on Map" button
           ],
         ),
       ),
     );
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppColors.secondaryTextColor, size: 20),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: AppStyles.labelText.copyWith(fontWeight: FontWeight.w600)),
+              Text(value, style: AppStyles.bodyText1),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
