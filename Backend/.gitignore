@@ -8,7 +8,7 @@ node_modules/
 serviceAccountKey.json
 firebaseKeys/ # If you store service account keys in a dedicated folder
 # Specific service account key identified in the error:
-Backend/FirebaseKeys/autofix-car-firebase-adminsdk.json
+FirebaseKeys/autofix-car-firebase-adminsdk.json
 
 # npm debug logs
 npm-debug.log*
