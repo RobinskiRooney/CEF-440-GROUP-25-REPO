@@ -3,3 +3,4 @@ node_modules/
 serviceAccountKey.json
 npm-debug.log
 FirebaseKeys/
+FirebaseKeys/autofix-car-firebase-adminsdk.json
