@@ -85,12 +85,7 @@ class _DashboardLightScanningPageState extends State<DashboardLightScanningPage>
       backgroundColor: const Color.fromARGB(0, 19, 72, 218), // Make app bar transparent
       elevation: 0,
       systemOverlayStyle: SystemUiOverlayStyle.light, // For white status bar icons
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
-        onPressed: () {
-          Navigator.pop(context); // Go back to the previous screen (e.g., MainNavigation)
-        },
-      ),
+     
       title: const Text(
         'Dashboard Light Scanning',
         style: TextStyle(

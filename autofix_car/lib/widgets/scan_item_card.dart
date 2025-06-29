@@ -1,101 +1,128 @@
 // lib/widgets/scan_item_card.dart
 import 'package:flutter/material.dart';
-import 'package:autofix_car/models/scan_data.dart'; // Import ScanData model
-import 'package:autofix_car/constants/app_colors.dart'; // Import AppColors
-import 'package:autofix_car/constants/app_styles.dart'; // Import AppStyles
+import 'package:intl/intl.dart'; // For date formatting
+import '../models/scan_data.dart'; // Import ScanData
 
 class ScanItemCard extends StatelessWidget {
   final ScanData scan;
-  final VoidCallback? onTap; // Optional callback for tapping the card
+  final VoidCallback? onTap;
 
-  const ScanItemCard({
-    super.key,
-    required this.scan,
-    this.onTap,
-  });
+  const ScanItemCard({super.key, required this.scan, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      elevation: 4,
+      shadowColor: Colors.black.withOpacity(0.05),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
-        onTap: onTap ?? () {
-          // Default action: show a snackbar or navigate to scan details
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Viewing scan details for: ${scan.title}')),
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.all(16.0),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image/Icon for the scan item
+              // Image or Icon
               Container(
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: AppColors.inputFillColor, // Light background for image area
-                  image: DecorationImage(
-                    image: NetworkImage(scan.imagePath), // Use NetworkImage for URL
-                    fit: BoxFit.cover,
-                    onError: (exception, stackTrace) {
-                      // Fallback for image loading errors
-                      debugPrint('Error loading scan image: $exception');
-                      // Can display a placeholder icon/text instead
-                    },
-                  ),
+                  color: scan.statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                // Optional: display icon if image not available
-                child: scan.imagePath.isEmpty
-                    ? const Icon(Icons.car_repair, color: AppColors.secondaryTextColor, size: 30)
-                    : null,
+                child: scan.imagePath != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          scan.imagePath!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Icon(
+                            scan.statusIcon,
+                            color: scan.statusColor,
+                            size: 30,
+                          ),
+                        ),
+                      )
+                    : Icon(scan.statusIcon, color: scan.statusColor, size: 30),
               ),
               const SizedBox(width: 16),
-              // Scan details
+              // Scan Details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       scan.title,
-                      style: AppStyles.headline3.copyWith(fontSize: 16), // Smaller headline for card title
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       scan.description,
-                      style: AppStyles.bodyText2,
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (scan.scanDateTime != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        'Scanned: ${scan.scanDateTime!.toLocal().toIso8601String().substring(0, 10)}', // Format date
-                        style: AppStyles.smallText,
-                      ),
-                    ],
-                    if (scan.status != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        'Status: ${scan.status}',
-                        style: AppStyles.smallText.copyWith(
-                          color: scan.status == 'No Faults' ? AppColors.successColor : AppColors.errorColor,
-                          fontWeight: FontWeight.bold,
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 14,
+                          color: Colors.grey[500],
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        Text(
+                          DateFormat(
+                            'MMM dd, yyyy - hh:mm a',
+                          ).format(scan.scanDateTime),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-              // Arrow icon
-              const Icon(Icons.arrow_forward_ios, color: AppColors.secondaryTextColor, size: 16),
+              const SizedBox(width: 8),
+              // Status Indicator
+              Align(
+                alignment: Alignment.centerRight,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: scan.statusColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    scan.status
+                        .toString()
+                        .split('.')
+                        .last
+                        .replaceAllMapped(
+                          RegExp(r'([A-Z])'),
+                          (match) => ' ${match.group(0)}',
+                        ), // "faultsDetected" -> "faults Detected"
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: scan.statusColor,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

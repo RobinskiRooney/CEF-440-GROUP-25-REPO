@@ -8,6 +8,7 @@ const authController = require('../controllers/authController'); // Import the a
 router.post('/register', authController.registerUser); // POST /auth/register to create a new user
 router.post('/login', authController.loginUser);       // POST /auth/login to authenticate and get a custom token
 router.post('/refresh-token', authController.refreshToken); // POST /auth/refresh-token
+router.post('/google-signin', authController.signInWithGoogle)
 
 
 // Export the router

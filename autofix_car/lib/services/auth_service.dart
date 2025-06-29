@@ -7,40 +7,40 @@
    // Accessed from environment variables loaded via flutter_dotenv.
    final String kBaseUrl = dotenv.env['BASE_URL'] ?? 'http://fallback.url';
 
+ Future<Map<String, dynamic>> _handleHttpCall(
+     String endpoint, Map<String, dynamic> body) async {
+   final url = Uri.parse('$kBaseUrl/auth/$endpoint');
+   try {
+     final response = await http.post(
+       url,
+       headers: {'Content-Type': 'application/json'},
+       body: json.encode(body),
+     );
+
+     final responseBody = json.decode(response.body);
+
+     if (response.statusCode >= 200 && response.statusCode < 300) {
+       return responseBody;
+     } else {
+       throw Exception(
+           responseBody['message'] ?? 'An unknown error occurred.');
+     }
+   } catch (e) {
+     throw Exception('Failed to connect to the server: $e');
+   }
+ }
+
+ Future<Map<String, dynamic>> signInWithGoogleBackend(String idToken) async {
+   return _handleHttpCall('google-signin', {'idToken': idToken});
+ }
    /**
     * Registers a new user by calling your Node.js backend's /auth/register endpoint.
     * Returns the backend's response map on success.
     */
-   Future<Map<String, dynamic>?> registerUserViaBackend(String email, String password) async {
-     final url = Uri.parse('$kBaseUrl/auth/register');
-     print('Register URL: $url');
-
-     try {
-       final response = await http.post(
-         url,
-         headers: {
-           'Content-Type': 'application/json',
-         },
-         body: json.encode({
-           'email': email,
-           'password': password,
-         }),
-       );
-
-       if (response.statusCode == 201) {
-         print('Backend registration successful: ${response.body}');
-         return json.decode(response.body);
-       } else {
-         print('Backend registration failed: ${response.statusCode}');
-         print('Response body: ${response.body}');
-         final Map<String, dynamic> errorData = json.decode(response.body);
-         throw Exception(errorData['message'] ?? 'Unknown error during registration');
-       }
-     } catch (e) {
-       print('Error during backend registration: $e');
-       throw Exception('Network error or unexpected issue during registration: $e');
-     }
-   }
+  Future<Map<String, dynamic>> registerUserViaBackend(
+      String email, String password) async {
+    return _handleHttpCall('register', {'email': email, 'password': password});
+  }
 
    /**
     * Logs in a user by calling your Node.js backend's /auth/login endpoint.
@@ -48,108 +48,65 @@
     * This function stores these tokens securely using TokenManager.
     * Returns the full response data on success.
     */
-   Future<Map<String, dynamic>?> loginUserViaBackend(String email, String password) async {
-     final url = Uri.parse('$kBaseUrl/auth/login');
-     print('Login URL: $url');
+  Future<Map<String, dynamic>> loginUserViaBackend(
+      String email, String password) async {
+    final responseData =
+        await _handleHttpCall('login', {'email': email, 'password': password});
 
-     try {
-       final response = await http.post(
-         url,
-         headers: {
-           'Content-Type': 'application/json',
-         },
-         body: json.encode({
-           'email': email,
-           'password': password,
-         }),
-       );
+    final idToken = responseData['idToken'] as String?;
+    final refreshToken = responseData['refreshToken'] as String?;
+    final uid = responseData['uid'] as String?;
+    final userEmail = responseData['email'] as String?;
 
-       if (response.statusCode == 200) {
-         final responseData = json.decode(response.body);
-         print('Backend login successful: $responseData');
+    if (idToken == null ||
+        refreshToken == null ||
+        uid == null ||
+        userEmail == null) {
+      throw Exception('Login failed: Missing required data from backend.');
+    }
 
-         final String? idToken = responseData['idToken'];
-         final String? refreshToken = responseData['refreshToken'];
-         final String? uid = responseData['uid'];
-         final String? userEmail = responseData['email'];
+    await TokenManager.saveTokens(
+      idToken: idToken,
+      refreshToken: refreshToken,
+      uid: uid,
+      email: userEmail,
+    );
 
-         if (idToken != null && refreshToken != null && uid != null && userEmail != null) {
-           await TokenManager.saveTokens(
-             idToken: idToken,
-             refreshToken: refreshToken,
-             uid: uid,
-             email: userEmail,
-           );
-           return responseData; // Contains uid, email, idToken, refreshToken
-         } else {
-           throw Exception('Login failed: Missing tokens or user info from backend.');
-         }
-       } else {
-         print('Backend login failed: ${response.statusCode}');
-         print('Response body: ${response.body}');
-         final Map<String, dynamic> errorData = json.decode(response.body);
-         throw Exception(errorData['message'] ?? 'Unknown error during login');
-       }
-     } catch (e) {
-       print('Error during backend login: $e');
-       throw Exception('Network error or unexpected issue during backend login: $e');
-     }
-   }
+    return responseData;
+  }
 
    /**
     * Refreshes the ID Token by sending the Refresh Token to your Node.js backend.
     * Updates the stored tokens and returns the new ID Token on success.
     */
-   Future<String?> refreshTokenViaBackend() async {
-     final String? refreshToken = await TokenManager.getRefreshToken();
-     if (refreshToken == null) {
-       print('No refresh token found to refresh ID token.');
-       return null;
-     }
+  Future<String> refreshTokenViaBackend() async {
+    final refreshToken = await TokenManager.getRefreshToken();
+    if (refreshToken == null) {
+      throw Exception('No refresh token available.');
+    }
 
-     final url = Uri.parse('$kBaseUrl/auth/refresh-token');
-     print('Refresh Token URL: $url');
+    try {
+      final responseData =
+          await _handleHttpCall('refresh-token', {'refreshToken': refreshToken});
 
-     try {
-       final response = await http.post(
-         url,
-         headers: {'Content-Type': 'application/json'},
-         body: json.encode({'refreshToken': refreshToken}),
-       );
+      final newIdToken = responseData['idToken'] as String?;
+      final newRefreshToken = responseData['refreshToken'] as String?;
 
-       if (response.statusCode == 200) {
-         final responseData = json.decode(response.body);
-         final String? newIdToken = responseData['idToken'];
-         final String? newRefreshToken = responseData['refreshToken'];
+      if (newIdToken == null) {
+        throw Exception('Token refresh failed: No new ID token received.');
+      }
 
-         if (newIdToken != null) {
-           await TokenManager.saveTokens(
-             idToken: newIdToken,
-             refreshToken: newRefreshToken ?? refreshToken, // Use new refresh token if provided
-             uid: await TokenManager.getUid() ?? '', // Re-save existing user info
-             email: await TokenManager.getEmail() ?? '', // Re-save existing user info
-           );
-           print('ID Token refreshed successfully!');
-           return newIdToken;
-         } else {
-           throw Exception('Token refresh failed: No new ID token received.');
-         }
-       } else {
-         print('Token refresh failed: ${response.statusCode}');
-         print('Response body: ${response.body}');
-         final Map<String, dynamic> errorData = json.decode(response.body);
-         // If refresh token is invalid or expired, force logout on client
-         if (response.statusCode == 401 || response.statusCode == 403) {
-           await TokenManager.clearTokens();
-           print('Refresh token invalid or expired. User logged out.');
-           throw Exception('Session expired. Please log in again.');
-         }
-         throw Exception(errorData['message'] ?? 'Unknown error during token refresh');
-       }
-     } catch (e) {
-       print('Error refreshing token: $e');
-       await TokenManager.clearTokens(); // Clear tokens on network/unexpected error during refresh
-       throw Exception('Network or unexpected error during token refresh: $e');
-     }
-   }
+      await TokenManager.saveTokens(
+        idToken: newIdToken,
+        refreshToken: newRefreshToken ?? refreshToken,
+        uid: await TokenManager.getUid() ?? '',
+        email: await TokenManager.getEmail() ?? '',
+      );
+
+      return newIdToken;
+    } catch (e) {
+      await TokenManager.clearTokens();
+      throw Exception('Session expired. Please log in again.');
+    }
+  }
    

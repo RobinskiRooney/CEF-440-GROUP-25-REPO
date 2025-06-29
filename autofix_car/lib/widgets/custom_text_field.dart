@@ -15,6 +15,7 @@ class CustomTextField extends StatelessWidget {
   final bool readOnly; // Added readOnly property
   final int? maxLines; // Added maxLines for multiline input
   final int? minLines; // Added minLines for multiline input
+  final String? errorText; // Added errorText parameter
 
   const CustomTextField({
     super.key,
@@ -29,6 +30,7 @@ class CustomTextField extends StatelessWidget {
     this.readOnly = false, // Initialize readOnly
     this.maxLines = 1, // Default to single line
     this.minLines, // Allow null for flexible multiline
+     this.errorText, // Add to constructor
   });
 
   @override
@@ -88,6 +90,7 @@ class CustomTextField extends StatelessWidget {
           horizontal: 16,
           vertical: 16,
         ),
+         errorText: errorText, // Pass errorText to InputDecoratio
       ),
     );
   }

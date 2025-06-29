@@ -1,9 +1,8 @@
-// lib/screens/camera_overlay_scanner.dart
 import 'package:flutter/material.dart';
-import 'package:camera/camera.dart'; // Import the camera package
-import 'dart:io'; // For File
-import '../pages/scanning_result_page.dart'; // Import the target page
-import '../constants/app_colors.dart'; // Assuming you have AppColors
+import 'package:camera/camera.dart';
+import 'dart:io';
+import '../pages/scanning_result_page.dart';
+import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 
 class CameraOverlayScanner extends StatefulWidget {
@@ -17,7 +16,7 @@ class _CameraOverlayScannerState extends State<CameraOverlayScanner> {
   CameraController? _cameraController;
   List<CameraDescription>? _cameras;
   bool _isCameraInitialized = false;
-  bool _isCapturing = false; // To prevent multiple captures
+  bool _isCapturing = false;
 
   @override
   void initState() {
@@ -26,56 +25,68 @@ class _CameraOverlayScannerState extends State<CameraOverlayScanner> {
   }
 
   Future<void> _initializeCamera() async {
+    if (_isCameraInitialized) return; // Prevent re-initialization
+
     try {
-      // Ensure cameras are available
       _cameras = await availableCameras();
       if (_cameras == null || _cameras!.isEmpty) {
-        print('No cameras found on this device.');
-        // Optionally show an error message or navigate away
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No cameras found on this device.')),
-          );
+          _showSnackBar('No cameras found on this device.');
+          Navigator.of(context).pop(); // Go back if no camera
         }
         return;
       }
 
-      // Initialize the camera controller with the first available camera
+      // Try to find a back camera, otherwise use the first available
+      CameraDescription? backCamera;
+      for (var camera in _cameras!) {
+        if (camera.lensDirection == CameraLensDirection.back) {
+          backCamera = camera;
+          break;
+        }
+      }
+
       _cameraController = CameraController(
-        _cameras![0], // Use the first available camera (usually back camera)
-        ResolutionPreset.high, // Set resolution
-        enableAudio: false, // No audio needed for dashboard scanning
+        backCamera ?? _cameras![0], // Use back camera if found, else first
+        ResolutionPreset.high,
+        enableAudio: false,
+        imageFormatGroup:
+            ImageFormatGroup.jpeg, // Ensure JPEG format for wider compatibility
       );
 
-      // Initialize the controller
       await _cameraController!.initialize();
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
         _isCameraInitialized = true;
       });
-    } catch (e) {
-      print('Error initializing camera: $e');
+    } on CameraException catch (e) {
+      String errorMessage;
+      switch (e.code) {
+        case 'CameraAccessDenied':
+          errorMessage =
+              'Camera access denied. Please grant permissions in settings.';
+          break;
+        case 'CameraNotAvailable':
+          errorMessage = 'Camera not available or in use by another app.';
+          break;
+        default:
+          errorMessage = 'Failed to initialize camera: ${e.description}';
+      }
+      print('Error initializing camera: $errorMessage');
       if (mounted) {
-        // Handle camera initialization errors (e.g., show a message to the user)
-        String errorMessage = 'Error initializing camera.';
-        if (e is CameraException) {
-          switch (e.code) {
-            case 'CameraAccessDenied':
-              errorMessage = 'Camera access denied. Please grant permissions.';
-              break;
-            case 'CameraNotAvailable':
-              errorMessage = 'Camera not available.';
-              break;
-            default:
-              errorMessage = 'Camera error: ${e.description}';
-          }
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
+        _showSnackBar(errorMessage);
+        // Optionally pop to previous screen or show retry button
+      }
+      setState(() {
+        _isCameraInitialized = false;
+      });
+    } catch (e) {
+      print('Unexpected error initializing camera: $e');
+      if (mounted) {
+        _showSnackBar(
+          'An unexpected error occurred during camera initialization.',
         );
       }
       setState(() {
@@ -84,8 +95,24 @@ class _CameraOverlayScannerState extends State<CameraOverlayScanner> {
     }
   }
 
+  void _showSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 3),
+          backgroundColor:
+              AppColors.primaryColor, // Use your app's primary color
+        ),
+      );
+    }
+  }
+
   Future<void> _takePicture() async {
-    if (!_isCameraInitialized || _cameraController == null || !_cameraController!.value.isInitialized || _isCapturing) {
+    if (!_isCameraInitialized ||
+        _cameraController == null ||
+        !_cameraController!.value.isInitialized ||
+        _isCapturing) {
       return;
     }
     if (_cameraController!.value.isTakingPicture) {
@@ -100,20 +127,18 @@ class _CameraOverlayScannerState extends State<CameraOverlayScanner> {
     try {
       final XFile image = await _cameraController!.takePicture();
       if (mounted) {
-        // Navigate to ScanningResultPage, passing the image path
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => ScanningResultPage(capturedImagePath: image.path),
+            builder: (context) =>
+                ScanningResultPage(capturedImagePath: image.path),
           ),
         );
       }
-    } catch (e) {
+    } on CameraException catch (e) {
       print('Error taking picture: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to take picture: $e')),
-        );
+        _showSnackBar('Failed to take picture: ${e.description}');
       }
     } finally {
       if (mounted) {
@@ -125,17 +150,19 @@ class _CameraOverlayScannerState extends State<CameraOverlayScanner> {
   }
 
   Widget _buildCorner(Alignment alignment) {
-    // Determine which borders to apply based on alignment
-    BorderSide borderSide = BorderSide(color: Colors.blue.shade600, width: 3); // Changed to blue for better visibility
+    final BorderSide borderSide = BorderSide(
+      color: AppColors.accentColor,
+      width: 3.5,
+    ); // Using accentColor
     return Container(
-      width: 30, // Length of the corner line
-      height: 30, // Length of the corner line
+      width: 35, // Slightly larger corners
+      height: 35,
       decoration: BoxDecoration(
         border: Border(
-          top: alignment == Alignment.topLeft || alignment == Alignment.topRight ? borderSide : BorderSide.none,
-          bottom: alignment == Alignment.bottomLeft || alignment == Alignment.bottomRight ? borderSide : BorderSide.none,
-          left: alignment == Alignment.topLeft || alignment == Alignment.bottomLeft ? borderSide : BorderSide.none,
-          right: alignment == Alignment.topRight || alignment == Alignment.bottomRight ? borderSide : BorderSide.none,
+          top: alignment.y < 0 ? borderSide : BorderSide.none,
+          bottom: alignment.y > 0 ? borderSide : BorderSide.none,
+          left: alignment.x < 0 ? borderSide : BorderSide.none,
+          right: alignment.x > 0 ? borderSide : BorderSide.none,
         ),
       ),
     );
@@ -143,108 +170,168 @@ class _CameraOverlayScannerState extends State<CameraOverlayScanner> {
 
   @override
   void dispose() {
-    _cameraController?.dispose(); // Dispose the controller when the widget is removed
+    _cameraController?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_isCameraInitialized || _cameraController == null || !_cameraController!.value.isInitialized) {
+    // Show loading or error state
+    if (!_isCameraInitialized ||
+        _cameraController == null ||
+        !_cameraController!.value.isInitialized) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Camera Scan')),
-        body: const Center(
-          child: CircularProgressIndicator(color: AppColors.primaryColor), // Show loading indicator
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (!_isCameraInitialized)
+                const CircularProgressIndicator(color: AppColors.primaryColor)
+              else
+                Icon(
+                  Icons.camera_alt_outlined,
+                  size: 80,
+                  color: AppColors.primaryColor.withOpacity(0.6),
+                ),
+              const SizedBox(height: 20),
+              Text(
+                _isCameraInitialized
+                    ? 'Camera not ready or permission denied.'
+                    : 'Initializing camera...',
+                style: AppStyles.bodyText1.copyWith(
+                  color: AppColors.secondaryTextColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       );
     }
 
-    // Calculate aspect ratio to fit the camera preview
     final size = MediaQuery.of(context).size;
     final cameraAspectRatio = _cameraController!.value.aspectRatio;
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.black, // Dark app bar for camera view
-        elevation: 0,
-        title: const Text('Scan Dashboard', style: TextStyle(color: Colors.white)),
-        centerTitle: true,
-      ),
       body: Stack(
         children: [
           // Camera Preview filling the entire screen
-          SizedBox(
-            width: size.width,
-            height: size.height,
-            child: FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: size.width,
-                height: size.width / cameraAspectRatio,
-                child: CameraPreview(_cameraController!),
-              ),
+          Positioned.fill(
+            child: AspectRatio(
+              aspectRatio: cameraAspectRatio,
+              child: CameraPreview(_cameraController!),
             ),
           ),
-          // Transparent overlay to dim areas outside the scanning rectangle
+
+          // --- Scanning Overlay ---
+          // Dimming overlay with a cutout
           ColorFiltered(
             colorFilter: ColorFilter.mode(
-              Colors.black.withOpacity(0.5), // Adjust opacity for desired dimming
-              BlendMode.srcOut, // This blend mode creates the "cutout" effect
+              Colors.black.withOpacity(
+                0.6,
+              ), // Slightly darker dimming for contrast
+              BlendMode.srcOut,
             ),
             child: Stack(
               children: [
                 Container(
                   decoration: const BoxDecoration(
-                    color: Colors.black, // Background color for the filter
+                    color: Colors.black,
                     backgroundBlendMode: BlendMode.dstOut,
                   ),
                 ),
                 Center(
                   child: Container(
-                    width: MediaQuery.of(context).size.width * 0.90,
-                    height: MediaQuery.of(context).size.width * 0.85,
+                    width:
+                        size.width * 0.90, // Match your desired scanning area
+                    height: size.width * 0.85,
                     decoration: BoxDecoration(
-                      color: Colors.white, // Color that gets "cut out"
-                      borderRadius: BorderRadius.circular(8.0),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(
+                        12.0,
+                      ), // Slightly more rounded corners
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          // Blue scanning rectangle border and corners
+
+          // Inner border and animated scanning line (optional but nice)
           Center(
             child: Container(
-              width: MediaQuery.of(context).size.width * 0.90, // Adjust width as needed
-              height: MediaQuery.of(context).size.width * 0.85, // Adjust height
+              width: size.width * 0.90,
+              height: size.width * 0.85,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.blue.shade600, width: 3.0),
-                borderRadius: BorderRadius.circular(8.0),
+                border: Border.all(
+                  color: AppColors.accentColor.withOpacity(0.7),
+                  width: 2.0,
+                ), // Thinner, subtle border
+                borderRadius: BorderRadius.circular(12.0),
               ),
               child: Stack(
                 children: [
-                  Positioned(top: 0, left: 0, child: _buildCorner(Alignment.topLeft)),
-                  Positioned(top: 0, right: 0, child: _buildCorner(Alignment.topRight)),
-                  Positioned(bottom: 0, left: 0, child: _buildCorner(Alignment.bottomLeft)),
-                  Positioned(bottom: 0, right: 0, child: _buildCorner(Alignment.bottomRight)),
+                  // Corner markers
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    child: _buildCorner(Alignment.topLeft),
+                  ),
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: _buildCorner(Alignment.topRight),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    child: _buildCorner(Alignment.bottomLeft),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: _buildCorner(Alignment.bottomRight),
+                  ),
+
+                  // Add an animated scanning line for visual feedback (more advanced, requires AnimationController)
+                  // For simplicity, I'll omit the full animation code here, but this is where it would go.
+                  // Example:
+                  // Positioned(
+                  //   left: 0,
+                  //   right: 0,
+                  //   top: _animatedScanLinePosition.value, // Animate this
+                  //   child: Container(
+                  //     height: 2,
+                  //     color: AppColors.accentColor.withOpacity(0.8),
+                  //   ),
+                  // ),
                 ],
               ),
             ),
           ),
-          // Text overlay (optional)
+
+          // Instruction Text
           Positioned(
-            bottom: MediaQuery.of(context).size.height * 0.2, // Adjust position
+            bottom: size.height * 0.15, // Adjusted position for better balance
             left: 0,
             right: 0,
-            child: Text(
-              'Align car dashboard within the frame',
-              textAlign: TextAlign.center,
-              style: AppStyles.headline3.copyWith(color: Colors.white, shadows: [
-                Shadow(
-                  offset: Offset(1.0, 1.0),
-                  blurRadius: 3.0,
-                  color: Colors.black.withOpacity(0.7),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Text(
+                'Position the car dashboard within the frame to scan.',
+                textAlign: TextAlign.center,
+                style: AppStyles.headline4.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                  shadows: [
+                    Shadow(
+                      offset: const Offset(1.0, 1.0),
+                      blurRadius: 3.0,
+                      color: Colors.black.withOpacity(0.8),
+                    ),
+                  ],
                 ),
-              ]),
+              ),
             ),
           ),
         ],
@@ -254,9 +341,14 @@ class _CameraOverlayScannerState extends State<CameraOverlayScanner> {
           ? FloatingActionButton(
               onPressed: _takePicture,
               backgroundColor: AppColors.primaryColor,
-              child: const Icon(Icons.camera_alt, color: Colors.white),
+              shape: const CircleBorder(), // Make it perfectly round
+              child: const Icon(
+                Icons.camera_alt,
+                color: Colors.white,
+                size: 30,
+              ),
             )
-          : null, // Don't show button if not initialized or capturing
+          : null,
     );
   }
 }

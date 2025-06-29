@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../widgets/dashboard_header_copy.dart';
 import 'register_page.dart';
 import 'welcome_page.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -54,13 +55,13 @@ class _LandingPageState extends State<LandingPage> {
                       // Title
               
                       Center(
-                      child: Text(
-                        'Your next service is just a tap away.',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF718096),
+                        child: Text(
+                          'landing_subtitle'.tr(),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Color(0xFF718096),
+                          ),
                         ),
-                      ),
                       ),
                       
                       
@@ -74,7 +75,10 @@ class _LandingPageState extends State<LandingPage> {
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: _handleNext,
+                          onPressed: () async {
+                            await context.setLocale(const Locale('en'));
+                            _handleNext();
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF3182CE),
                             shape: RoundedRectangleBorder(
@@ -82,9 +86,9 @@ class _LandingPageState extends State<LandingPage> {
                             ),
                             elevation: 0,
                           ),
-                          child: const Text(
-                            'English',
-                            style: TextStyle(
+                          child: Text(
+                            'english'.tr(),
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
@@ -93,12 +97,15 @@ class _LandingPageState extends State<LandingPage> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                                            // French
+                      // French
                       SizedBox(
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: _handleNext,
+                          onPressed: () async {
+                            await context.setLocale(const Locale('fr'));
+                            _handleNext();
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF3182CE),
                             shape: RoundedRectangleBorder(
@@ -106,9 +113,9 @@ class _LandingPageState extends State<LandingPage> {
                             ),
                             elevation: 0,
                           ),
-                          child: const Text(
-                            'French',
-                            style: TextStyle(
+                          child: Text(
+                            'french'.tr(),
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,

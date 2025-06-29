@@ -1,74 +1,83 @@
-   // main.dart
-   import 'package:autofix_car/pages/main_navigation.dart';
+// main.dart
 import 'package:flutter/material.dart';
-   import 'package:flutter_dotenv/flutter_dotenv.dart'; // Import dotenv
-   import 'package:firebase_core/firebase_core.dart'; // Required for Firebase.initializeApp()
+import 'package:autofix_car/constants/app_colors.dart';
+import 'package:autofix_car/constants/app_styles.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:easy_localization/easy_localization.dart';
 
-   // You MUST run 'flutterfire configure' and uncomment the line below:
-   import 'firebase_options.dart';
+import 'package:autofix_car/pages/landing_page.dart';
+import 'package:autofix_car/pages/main_navigation.dart';
+import 'package:autofix_car/services/token_manager.dart';
+import 'firebase_options.dart';
 
-  //  import 'pages/login_page.dart';
-   import 'pages/landing_page.dart'; // Your page after successful login
-   import 'services/token_manager.dart'; // To check login status on startup
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-   void main() async {
-     WidgetsFlutterBinding.ensureInitialized();
+  // Load environment variables from .env file
+  await dotenv.load(fileName: ".env");
 
-     // Load environment variables from .env file
-     await dotenv.load(fileName: ".env");
+  // Initialize Firebase Core
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
-     // Initialize Firebase Core (required even if you don't use client-side Auth methods directly)
-     await Firebase.initializeApp(
-       options: DefaultFirebaseOptions.currentPlatform, // Uncomment after 'flutterfire configure'
-     );
+  await EasyLocalization.ensureInitialized();
 
-     runApp(const AutoFixApp());
-   }
+  runApp(
+    EasyLocalization(
+      supportedLocales: const [Locale('en'), Locale('fr')],
+      path: 'l10n',
+      fallbackLocale: const Locale('en'),
+      child: const AutoFixApp(),
+    ),
+  );
+}
 
-   class AutoFixApp extends StatefulWidget {
-     const AutoFixApp({super.key});
+class AutoFixApp extends StatelessWidget {
+  const AutoFixApp({super.key});
 
-     @override
-     State<AutoFixApp> createState() => _AutoFixAppState();
-   }
+  Future<bool> _checkLoginStatus() async {
+    return await TokenManager.isLoggedIn();
+  }
 
-   class _AutoFixAppState extends State<AutoFixApp> {
-     // Check initial login status and navigate accordingly
-     Future<Widget> _getInitialRoute() async {
-       final bool loggedIn = await TokenManager.isLoggedIn();
-       print(loggedIn);
-       if (loggedIn) {
-         return const MainNavigation(); // Navigate to landing page if already logged in
-       } else {
-         return const LandingPage(); // Navigate to login page if not logged in
-       }
-     }
-
-     @override
-     Widget build(BuildContext context) {
-       return MaterialApp(
-         title: 'AutoFix',
-         theme: ThemeData(
-           primarySwatch: Colors.blue,
-           fontFamily: 'Inter',
-           visualDensity: VisualDensity.adaptivePlatformDensity,
-         ),
-         // Use FutureBuilder to determine the initial route based on login status
-         home: FutureBuilder<Widget>(
-           future: _getInitialRoute(),
-           builder: (context, snapshot) {
-             if (snapshot.connectionState == ConnectionState.done) {
-               return snapshot.data!;
-             } else {
-               // Show a loading indicator while determining the route
-               return const Scaffold(
-                 body: Center(child: CircularProgressIndicator()),
-               );
-             }
-           },
-         ),
-         debugShowCheckedModeBanner: false,
-       );
-     }
-   }
-   
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'AutoFix',
+      theme: ThemeData(
+        primarySwatch: AppColors.primaryMaterialColor,
+        scaffoldBackgroundColor: AppColors.backgroundColor,
+        fontFamily: 'Inter',
+        textTheme: const TextTheme(
+          displayLarge: AppStyles.headline1,
+          displayMedium: AppStyles.headline2,
+          displaySmall: AppStyles.headline3,
+          bodyLarge: AppStyles.bodyText1,
+          bodyMedium: AppStyles.bodyText2,
+        ),
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      localizationsDelegates: context.localizationDelegates,
+      supportedLocales: context.supportedLocales,
+      locale: context.locale,
+      home: FutureBuilder<bool>(
+        future: _checkLoginStatus(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          } else {
+            if (snapshot.hasData && snapshot.data == true) {
+              return const MainNavigation();
+            } else {
+              return const LandingPage();
+            }
+          }
+        },
+      ),
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}

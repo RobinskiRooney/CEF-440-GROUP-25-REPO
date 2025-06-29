@@ -1,70 +1,74 @@
+import 'package:autofix_car/constants/app_colors.dart';
+import 'package:autofix_car/constants/app_styles.dart';
+import 'package:autofix_car/widgets/custom_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../pages/otp_verification_page.dart';
 
-class ForgotPasswordPage extends StatelessWidget {
+class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
+
+  @override
+  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
+}
+
+class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50, // Light grey background
+      backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent, // Make app bar transparent
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        systemOverlayStyle: SystemUiOverlayStyle.dark, // For dark status bar icons
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
+          icon: const Icon(Icons.arrow_back_ios,
+              color: AppColors.primaryColor, size: 20),
           onPressed: () {
-            Navigator.pop(context); // Go back to the previous screen (e.g., login)
+            Navigator.pop(context);
           },
         ),
         title: const Text(
-          'Forgot Password', // Title for the page
-          style: TextStyle(
-            color: Colors.black87,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
+          'Forgot Password',
+          style: AppStyles.headline4,
         ),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Top Dashboard Image (as seen in the design)
-            Image.asset(
-              'assets/images/d2.jpeg', // Ensure this image is in your assets
-              fit: BoxFit.cover,
-            ),
-
-            
-            const SizedBox(height: 30),
-            // "AutoFix car" text
-            const Text(
-              'AutoFix car',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            children: [
+              Image.asset(
+                'assets/images/d2.jpeg',
+                fit: BoxFit.cover,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 10),
-            // Subtitle
-            const Text(
-              "You don't remember your password? change it",
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.black54,
+              const SizedBox(height: 30),
+              const Text(
+                'AutoFix car',
+                style: AppStyles.headline1,
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 40),
-            // Password Reset Card
-            _buildResetPasswordCard(context),
-            const SizedBox(height: 50), // Spacing at the bottom
-          ],
+              const SizedBox(height: 10),
+              const Text(
+                "You don't remember your password? change it",
+                style: AppStyles.bodyText1,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+              _buildResetPasswordCard(context),
+              const SizedBox(height: 50),
+            ],
+          ),
         ),
       ),
     );
@@ -72,7 +76,6 @@ class ForgotPasswordPage extends StatelessWidget {
 
   Widget _buildResetPasswordCard(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24.0),
       padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -85,64 +88,69 @@ class ForgotPasswordPage extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min, // To make the card fit its content
-        children: [
-          // Email input field
-          TextField(
-            keyboardType: TextInputType.emailAddress,
-            decoration: InputDecoration(
-              labelText: 'Email',
-              hintText: 'Value',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.0),
-                borderSide: BorderSide.none, // Remove default border
-              ),
-              filled: true,
-              fillColor: Colors.grey.shade100, // Light grey fill
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CustomTextField(
+              controller: _emailController,
+              hintText: 'Enter your email',
+              prefixIcon: Icons.email,
+              keyboardType: TextInputType.emailAddress,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter your email';
+                }
+                if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                  return 'Please enter a valid email';
+                }
+                return null;
+              },
             ),
-          ),
-          const SizedBox(height: 30),
-          // Buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end, // Align buttons to the end
-            children: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Typically go back to login
-                },
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(color: Colors.black54, fontSize: 16),
-                ),
-              ),
-              const SizedBox(width: 15),
-              ElevatedButton(
-                onPressed: () {
-                  // Implement password reset logic here
-     
-             Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const OtpVerificationPage()),
-    );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black87, // Dark button color
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+            const SizedBox(height: 30),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: AppColors.greyTextColor, fontSize: 16),
                   ),
                 ),
-                child: const Text(
-                  'Reset Password',
-                  style: TextStyle(fontSize: 16),
+                const SizedBox(width: 15),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      // Implement password reset logic here
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const OtpVerificationPage()),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 25, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'Reset Password',
+                    style: AppStyles.buttonText,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

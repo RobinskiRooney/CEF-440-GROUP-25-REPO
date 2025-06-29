@@ -48,6 +48,21 @@ dependencies:
   font_awesome_flutter: ^10.8.0
   record: ^6.0.0
   audioplayers: ^6.4.0
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.0
+  # localization: ^2.1.1
+  easy_localization: ^3.0.1
+  flutter_launcher_icons: "^0.13.1"
+  # firebase_storage: ^11.2.7
+
+flutter_launcher_icons:
+  android: true # Generate icons for Android
+  ios: true     # Generate icons for iOS
+  image_path: "assets/app_icon/icon.png" # Path to your icon image
+
+  # Optional: For Android Adaptive Icons (Android 8.0+)
+  # adaptive_icon_background: "#ffffff" # Hex color or path to an image asset
+  # adaptive_icon_foreground: "assets/app_icon/icon_foreground.png" # Path to your foreground image (should have transparency)
 
 
 dev_dependencies:

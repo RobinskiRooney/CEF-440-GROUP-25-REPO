@@ -1,23 +1,40 @@
-// config/firebase.js - Firebase Initialization and Database Export
-
-// Import Firebase Admin SDK
+// config/firebase.js
 const admin = require('firebase-admin');
 
-// IMPORTANT: Replace '../serviceAccountKey.json' with the actual path
-// to your Firebase service account key file.
-// You can download this file from your Firebase project settings -> Service accounts.
-// For production, consider using environment variables for the service account key content.
-const serviceAccount = require('../FirebaseKeys/autofix-car-firebase-adminsdk.json'); // Path relative to this config file
+// Check if Firebase app is already initialized to prevent re-initialization errors
+if (admin.apps.length === 0) {
+  // Read the Firebase service account key from environment variable
+  // This environment variable should be set on Render with the FULL JSON string content
+  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_JSON;
 
-// Initialize Firebase Admin SDK if not already initialized
-if (!admin.apps.length) {
+  if (!serviceAccountJson) {
+    console.error("FIREBASE_SERVICE_ACCOUNT_KEY_JSON environment variable is not set.");
+    // Exit or throw an error, as Firebase Admin SDK cannot initialize without credentials
+    process.exit(1);
+  }
+
+  let serviceAccount;
+  try {
+    // Parse the JSON string from the environment variable
+    serviceAccount = JSON.parse(serviceAccountJson);
+  } catch (e) {
+    console.error("Error parsing FIREBASE_SERVICE_ACCOUNT_KEY_JSON:", e);
+    process.exit(1);
+  }
+
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
+    credential: admin.credential.cert(serviceAccount),
+    // If you use Realtime Database or Storage, add databaseURL or storageBucket here:
+    // databaseURL: "https://<DATABASE_NAME>.firebaseio.com",
+    // storageBucket: "gs://<BUCKET_NAME>.appspot.com"
   });
+
+  console.log('Firebase Admin SDK initialized successfully via environment variable.');
+} else {
+  console.log('Firebase Admin SDK already initialized.');
 }
 
-// Get a reference to the Firestore database
+// Export the Firestore database instance
 const db = admin.firestore();
 
-// Export the Firestore database instance
 module.exports = db;

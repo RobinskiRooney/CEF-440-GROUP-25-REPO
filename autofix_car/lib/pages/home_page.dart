@@ -11,6 +11,10 @@ import '../widgets/camera_overlay_scanner.dart';
 import '../pages/engine_diagnosis_page.dart';
 import '../pages/profile_page.dart';
 import 'help_and_support_page.dart'; // Ensure this is imported if used in bottom nav or elsewhere
+import 'package:autofix_car/services/user_service.dart';
+import 'package:autofix_car/models/user_profile.dart';
+import 'package:autofix_car/services/notification_service.dart';
+import 'package:autofix_car/models/notification_item.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,27 +24,97 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _selectedIndex = 0; // This state is for the bottom navigation bar, if HomePage manages it directly.
+  int _selectedIndex = 0;
+  UserProfile? _userProfile;
+  bool _isLoading = true;
+  String? _error;
+  List<NotificationItem> _notifications = [];
+  bool _isLoadingNotifications = true;
+  String? _notificationError;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserProfile();
+    _fetchNotifications();
+  }
+
+  Future<void> _fetchUserProfile() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final profile = await UserService.getUserProfile();
+      setState(() {
+        _userProfile = profile;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _fetchNotifications() async {
+    setState(() {
+      _isLoadingNotifications = true;
+      _notificationError = null;
+    });
+    try {
+      final notifications = await NotificationService.getMyNotifications();
+      setState(() {
+        _notifications = notifications;
+        _isLoadingNotifications = false;
+      });
+    } catch (e) {
+      setState(() {
+        _notificationError = e.toString();
+        _isLoadingNotifications = false;
+      });
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
-    // In a real app, you would navigate to different pages here based on index
-    // For now, we'll keep the HomePage as the main view and just update the selected index.
-    // Navigation to specific pages like HelpAndSupportPage will be handled by explicit buttons.
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.backgroundColor,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text(
+                'Loading',
+                style: TextStyle(
+                  color: Colors.blue,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Scaffold(
-      backgroundColor: AppColors.backgroundColor, // Use AppColors
+      backgroundColor: AppColors.backgroundColor,
       body: SingleChildScrollView(
         child: Column(
           children: [
             _buildHeader(context),
             _buildVehicleCategories(),
-            _buildDiagnosisCards(context), // Pass context for navigation
+            _buildDiagnosisCards(context),
             _buildNotificationsSection(),
           ],
         ),
@@ -49,14 +123,41 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    if (_isLoading) {
+      return Container(
+        padding: const EdgeInsets.only(
+          top: 60.0,
+          left: 24.0,
+          right: 24.0,
+          bottom: 20.0,
+        ),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_error != null) {
+      return Container(
+        padding: const EdgeInsets.only(
+          top: 60.0,
+          left: 24.0,
+          right: 24.0,
+          bottom: 20.0,
+        ),
+        child: Center(
+          child: Text('Error: $_error', style: TextStyle(color: Colors.red)),
+        ),
+      );
+    }
+    final user = _userProfile;
     return Container(
-      padding: const EdgeInsets.only(top: 60.0, left: 24.0, right: 24.0, bottom: 20.0),
+      padding: const EdgeInsets.only(
+        top: 60.0,
+        left: 24.0,
+        right: 24.0,
+        bottom: 20.0,
+      ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            AppColors.lightBlueGradientStart, // Lighter blue
-            AppColors.blueGradientEnd, // Darker blue
-          ],
+          colors: [AppColors.lightBlueGradientStart, AppColors.blueGradientEnd],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -76,28 +177,48 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Text(
                     'Welcome!',
-                    style: AppStyles.headline1.copyWith(color: Colors.white), // Use AppStyles
+                    style: AppStyles.headline1.copyWith(color: Colors.white),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Boukeng rochinel,',
-                    style: AppStyles.bodyText.copyWith(color: Colors.white70), // Use AppStyles
+                  (user?.name ?? '').isNotEmpty
+                  ? user!.name!
+                  : (user?.email ?? ''),
+                  style: AppStyles.bodyText.copyWith(color: Colors.white70),
+                  ),
+                  if ((user?.carModel ?? '').isNotEmpty)
+                  Text(
+                  'Car: ${user!.carModel}',
+                  style: AppStyles.bodyText.copyWith(color: Colors.white70),
+                  ),
+                  if ((user?.userLocation ?? '').isNotEmpty)
+                  Text(
+                  'Location: ${user!.userLocation}',
+                  style: AppStyles.bodyText.copyWith(color: Colors.white70),
+                  ),
+                  if ((user?.mobileContact ?? '').isNotEmpty)
+                  Text(
+                  'Contact: ${user!.mobileContact}',
+                  style: AppStyles.bodyText.copyWith(color: Colors.white70),
                   ),
                 ],
               ),
               GestureDetector(
                 onTap: () {
-                  // Handle profile picture tap
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const ProfilePage()),
+                    MaterialPageRoute(
+                      builder: (context) => const ProfilePage(),
+                    ),
                   );
                 },
                 child: CircleAvatar(
                   radius: 30,
                   backgroundColor: Colors.white,
-                  backgroundImage: const AssetImage(
-                      'assets/images/profile_pic.png'), // Ensure this asset exists and is declared
+                  backgroundImage:
+                      user?.imageUrl != null && user!.imageUrl!.isNotEmpty
+                      ? NetworkImage(user.imageUrl!) as ImageProvider
+                      : const AssetImage('assets/images/profile_pic.png'),
                   onBackgroundImageError: (exception, stackTrace) {
                     print('Error loading profile picture: $exception');
                   },
@@ -117,8 +238,14 @@ class _HomePageState extends State<HomePage> {
                 hintText: 'Search',
                 hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
                 border: InputBorder.none,
-                prefixIcon: Icon(Icons.search, color: Colors.white.withOpacity(0.7)),
-                suffixIcon: Icon(Icons.mic, color: Colors.white.withOpacity(0.7)),
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: Colors.white.withOpacity(0.7),
+                ),
+                suffixIcon: Icon(
+                  Icons.mic,
+                  color: Colors.white.withOpacity(0.7),
+                ),
               ),
               style: const TextStyle(color: Colors.white),
             ),
@@ -129,71 +256,131 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildVehicleCategories() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 24.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 24.0),
+      padding: const EdgeInsets.all(20.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            spreadRadius: 0,
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildCategoryItem(Icons.motorcycle, 'Bike'),
-          _buildCategoryItem(Icons.directions_car, 'Car'),
-          _buildCategoryItem(Icons.directions_bus, 'Bus'),
-          _buildCategoryItem(Icons.airport_shuttle, 'Van'), // Changed label for variety
+          Text(
+            'Vehicle Categories',
+            style: AppStyles.headline2.copyWith(
+              color: AppColors.textColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildCategoryItem(Icons.motorcycle, 'Bike'),
+              _buildCategoryItem(Icons.directions_car, 'Car'),
+              _buildCategoryItem(Icons.directions_bus, 'Bus'),
+              _buildCategoryItem(Icons.airport_shuttle, 'Van'),
+            ],
+          ),
         ],
       ),
     );
   }
 
   Widget _buildCategoryItem(IconData icon, String label) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12.0),
-          decoration: BoxDecoration(
-            color: AppColors.lightGrey, // Use AppColors
-            borderRadius: BorderRadius.circular(12.0),
+    return GestureDetector(
+      onTap: () {
+        // Add category selection logic here
+      },
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primaryColor.withOpacity(0.1),
+                  AppColors.primaryColor.withOpacity(0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16.0),
+              border: Border.all(
+                color: AppColors.primaryColor.withOpacity(0.1),
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 32,
+              color: AppColors.primaryColor,
+            ),
           ),
-          child: Icon(icon, size: 30, color: AppColors.primaryColor), // Use AppColors
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: AppStyles.bodyText.copyWith(color: AppColors.textColor), // Use AppStyles
-        ),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: AppStyles.bodyText.copyWith(
+              color: AppColors.textColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildDiagnosisCards(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'AI Diagnosis Tools',
+            style: AppStyles.headline2.copyWith(
+              color: AppColors.textColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
           _buildDiagnosisCard(
-            context, // Pass context
-            'Engine sound Diagnosis',
+            context,
+            'Engine Sound Diagnosis',
             'AI powered engine sound analysis',
-            AppColors.lightBlueCard, // Use AppColors
+            AppColors.lightBlueCard,
             Icons.graphic_eq,
             () {
-              // Navigate to Engine Sound Diagnosis Page
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const EngineDiagnosisPage()),
+                MaterialPageRoute(
+                  builder: (context) => const EngineDiagnosisPage(),
+                ),
               );
             },
           ),
           const SizedBox(height: 16),
           _buildDiagnosisCard(
-            context, // Pass context
-            'Dashboard light scanning',
+            context,
+            'Dashboard Light Scanning',
             'AI powered dashboard light analysis',
-            AppColors.lightOrangeCard, // Use AppColors
+            AppColors.lightOrangeCard,
             Icons.lightbulb_outline,
             () {
-              // Navigate to Camera Overlay Scanner Page
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const DashboardLightScanningPage()),
+                MaterialPageRoute(
+                  builder: (context) => const DashboardLightScanningPage(),
+                ),
               );
             },
           ),
@@ -203,52 +390,95 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildDiagnosisCard(
-      BuildContext context, String title, String subtitle, Color color, IconData icon, VoidCallback onTap) {
+    BuildContext context,
+    String title,
+    String subtitle,
+    Color color,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
     return InkWell(
-      onTap: onTap, // Add onTap handler
-      borderRadius: BorderRadius.circular(15.0),
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20.0),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
+        padding: const EdgeInsets.all(24.0),
         decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(15.0),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20.0),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 5,
-              offset: const Offset(0, 3),
+              color: Colors.grey.withOpacity(0.08),
+              spreadRadius: 0,
+              blurRadius: 20,
+              offset: const Offset(0, 4),
             ),
           ],
+          border: Border.all(
+            color: color.withOpacity(0.2),
+            width: 1,
+          ),
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12.0),
+              padding: const EdgeInsets.all(16.0),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10.0),
+                gradient: LinearGradient(
+                  colors: [color.withOpacity(0.8), color],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withOpacity(0.3),
+                    spreadRadius: 0,
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              child: Icon(icon, size: 28, color: AppColors.primaryColor), // Use AppColors
+              child: Icon(
+                icon,
+                size: 32,
+                color: Colors.white,
+              ),
             ),
-            const SizedBox(width: 15),
+            const SizedBox(width: 20),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: AppStyles.headline3.copyWith(color: AppColors.textColor), // Use AppStyles
+                    style: AppStyles.headline3.copyWith(
+                      color: AppColors.textColor,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     subtitle,
-                    style: AppStyles.bodyText.copyWith(color: AppColors.greyTextColor), // Use AppStyles
+                    style: AppStyles.bodyText.copyWith(
+                      color: AppColors.greyTextColor,
+                      fontSize: 14,
+                    ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: AppColors.greyTextColor, size: 20), // Use AppColors
+            Container(
+              padding: const EdgeInsets.all(8.0),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+              child: Icon(
+                Icons.arrow_forward_ios,
+                color: color,
+                size: 18,
+              ),
+            ),
           ],
         ),
       ),
@@ -256,98 +486,429 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildNotificationsSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+    if (_isLoadingNotifications) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+        padding: const EdgeInsets.all(20.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20.0),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.08),
+              spreadRadius: 0,
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_notificationError != null) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+        padding: const EdgeInsets.all(20.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20.0),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.08),
+              spreadRadius: 0,
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            'Error: $_notificationError',
+            style: TextStyle(color: Colors.red),
+          ),
+        ),
+      );
+    }
+
+    // Limit notifications to maximum 3
+    final displayNotifications = _notifications.take(3).toList();
+    final hasMoreNotifications = _notifications.length > 3;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+      padding: const EdgeInsets.all(20.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            spreadRadius: 0,
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Notifications',
-            style: AppStyles.headline2.copyWith(color: AppColors.textColor), // Use AppStyles
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Recent Notifications',
+                style: AppStyles.headline2.copyWith(
+                  color: AppColors.textColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (hasMoreNotifications)
+                GestureDetector(
+                  onTap: () {
+                    _showAllNotifications();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
+                    child: Text(
+                      'View All',
+                      style: AppStyles.bodyText.copyWith(
+                        color: AppColors.primaryColor,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(height: 15),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildNotificationCard(
-                  'assets/images/d2.jpeg', // Ensure this asset exists and is declared
-                  'Last Scan', // Corrected title
-                  'Parking brake is engaged, disengage it before driving.', // Corrected description
+          const SizedBox(height: 16),
+          _notifications.isEmpty
+              ? Container(
+                  padding: const EdgeInsets.all(20.0),
+                  decoration: BoxDecoration(
+                    color: AppColors.lightGrey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.notifications_none,
+                        color: AppColors.greyTextColor,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'No notifications yet',
+                        style: AppStyles.bodyText.copyWith(
+                          color: AppColors.greyTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      ...displayNotifications.map((notification) {
+                        return Row(
+                          children: [
+                            _buildNotificationCard(
+                              notification.imageUrl ?? 'assets/images/d1.png',
+                              notification.title,
+                              notification.message,
+                            ),
+                            const SizedBox(width: 15),
+                          ],
+                        );
+                      }).toList(),
+                      if (hasMoreNotifications)
+                        _buildMoreNotificationsCard(),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 15),
-                _buildNotificationCard(
-                  'assets/images/d1.png', // Ensure this asset exists and is declared
-                  'Power Steering Problem',
-                  'Imminent problems with the power steering system.',
-                ),
-                const SizedBox(width: 15),
-                _buildNotificationCard(
-                  'assets/images/d1.png', // Ensure this asset exists and is declared
-                  'ABS System', // Corrected title
-                  'Trouble with the Anti-lock Braking System.', // Corrected description
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildNotificationCard(String imagePath, String title, String description) {
+  void _showAllNotifications() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'All Notifications',
+                    style: AppStyles.headline2.copyWith(
+                      color: AppColors.textColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                itemCount: _notifications.length,
+                itemBuilder: (context, index) {
+                  final notification = _notifications[index];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12.0),
+                    padding: const EdgeInsets.all(16.0),
+                    decoration: BoxDecoration(
+                      color: AppColors.lightGrey.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8.0),
+                          child: Image.asset(
+                            notification.imageUrl ?? 'assets/images/d1.png',
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 50,
+                                height: 50,
+                                color: AppColors.lightGrey,
+                                child: const Icon(
+                                  Icons.notifications,
+                                  color: AppColors.greyTextColor,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                notification.title,
+                                style: AppStyles.headline3.copyWith(
+                                  color: AppColors.textColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                notification.message,
+                                style: AppStyles.bodyText.copyWith(
+                                  color: AppColors.greyTextColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMoreNotificationsCard() {
+    final remainingCount = _notifications.length - 3;
+    return GestureDetector(
+      onTap: _showAllNotifications,
+      child: Container(
+        width: 180,
+        height: 160,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.primaryColor.withOpacity(0.1),
+              AppColors.primaryColor.withOpacity(0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16.0),
+          border: Border.all(
+            color: AppColors.primaryColor.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(50.0),
+              ),
+              child: Icon(
+                Icons.add,
+                size: 32,
+                color: AppColors.primaryColor,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '+$remainingCount More',
+              style: AppStyles.headline3.copyWith(
+                color: AppColors.primaryColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'View all notifications',
+              style: AppStyles.bodyText.copyWith(
+                color: AppColors.greyTextColor,
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationCard(
+    String imagePath,
+    String title,
+    String description,
+  ) {
     return Container(
-      width: 160, // Fixed width for horizontal scroll
+      width: 180,
       decoration: BoxDecoration(
-        color: AppColors.cardColor, // Use AppColors
-        borderRadius: BorderRadius.circular(15.0),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 3),
+            color: Colors.grey.withOpacity(0.08),
+            spreadRadius: 0,
+            blurRadius: 15,
+            offset: const Offset(0, 4),
           ),
         ],
+        border: Border.all(
+          color: AppColors.lightGrey.withOpacity(0.3),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(15.0)),
-            child: Image.asset(
-              imagePath,
-              height: 100, // Adjust height as needed
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(16.0),
+            ),
+            child: Container(
+              height: 100,
               width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                print('Error loading notification asset: $imagePath - $error');
-                return Container(
-                  height: 100,
-                  width: double.infinity,
-                  color: AppColors.lightGrey,
-                  child: const Icon(Icons.broken_image, color: AppColors.greyTextColor),
-                );
-              },
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primaryColor.withOpacity(0.1),
+                    AppColors.primaryColor.withOpacity(0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Image.asset(
+                imagePath,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  print('Error loading notification asset: $imagePath - $error');
+                  return Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.primaryColor.withOpacity(0.1),
+                          AppColors.primaryColor.withOpacity(0.05),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.notifications_active,
+                        color: AppColors.primaryColor,
+                        size: 32,
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: AppStyles.headline3.copyWith(color: AppColors.textColor), // Use AppStyles
+                  style: AppStyles.headline3.copyWith(
+                    color: AppColors.textColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   description,
-                  style: AppStyles.bodyText.copyWith(color: AppColors.greyTextColor), // Use AppStyles
+                  style: AppStyles.bodyText.copyWith(
+                    color: AppColors.greyTextColor,
+                    fontSize: 12,
+                    height: 1.3,
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  child: Text(
+                    'New',
+                    style: AppStyles.bodyText.copyWith(
+                      color: AppColors.primaryColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ],
             ),

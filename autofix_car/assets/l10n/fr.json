@@ -1,0 +1,22 @@
+{
+  "complete_profile": "Complétez votre profil",
+  "lets_get_to_know_you": "Faisons connaissance !",
+  "fill_in_details": "Remplissez vos informations pour compléter votre profil.",
+  "full_name": "Nom complet",
+  "car_model": "Modèle de voiture",
+  "phone_number": "Numéro de téléphone",
+  "your_location": "Votre emplacement (tapez et sélectionnez)",
+  "pick_from_map": "Choisir sur la carte",
+  "selected": "Sélectionné",
+  "update_profile": "Mettre à jour le profil",
+  "please_enter_full_name": "Veuillez entrer votre nom complet.",
+  "please_select_car_model": "Veuillez sélectionner votre modèle de voiture.",
+  "please_enter_phone_number": "Veuillez entrer votre numéro de téléphone.",
+  "please_enter_address": "Veuillez entrer votre adresse.",
+  "please_select_valid_address": "Veuillez sélectionner une adresse valide à partir des suggestions ou de la carte.",
+  "profile_updated": "Profil mis à jour avec succès !",
+  "error": "Erreur",
+  "loading": "Chargement",
+  "french": "Français",
+  "english": "Anglais"
+}
