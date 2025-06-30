@@ -1,0 +1,50 @@
+# Node.js dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Firebase service account key (VERY IMPORTANT: NEVER commit this)
+serviceAccountKey.json
+firebaseKeys/ # If you store service account keys in a dedicated folder
+# Specific service account key identified in the error:
+Backend/FirebaseKeys/autofix-car-firebase-adminsdk.json
+
+# npm debug logs
+npm-debug.log*
+.npm/
+
+# Other common Node.js and OS-specific exclusions
+.DS_Store
+*.log
+.vscode/ # VS Code settings, if you don't want to share them
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.pnpm-debug.log*
+
+# Mac specific
+.DS_Store
+
+# Thumbs.db for Windows
+Thumbs.db
+
+# Compiled JavaScript files (if your source is TypeScript/Babel and build output is in a 'dist' or 'build' folder)
+# dist/
+# build/
+
+# npm package-lock.json changes (if you prefer to manage dependencies strictly via yarn.lock or similar, or just want to ignore this particular file)
+# package-lock.json
+
+# Test coverage results
+coverage/
+
+# Output of `npm pack`
+*.tgz
+
+# Other artifacts
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
